@@ -1,14 +1,17 @@
 import cors from "cors";
-import "dotenv/config";
 import express from "express";
 import helmet from "helmet";
 import morgan from "morgan";
 
+import { env } from "./config/env.js";
 import { prisma } from "./config/prisma.js";
+import {
+  requireAuth,
+  type AuthenticatedRequest,
+} from "./middleware/auth.middleware.js";
+import { authRouter } from "./modules/auth/auth.routes.js";
 
 const app = express();
-
-const PORT = process.env.PORT || 4000;
 
 app.use(helmet());
 app.use(cors());
@@ -19,31 +22,77 @@ app.get("/api/v1/health", async (_req, res) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       data: {
         service: "Cyber Platform API",
         status: "operational",
         database: "online",
-        environment: process.env.NODE_ENV || "development",
+        environment: env.NODE_ENV,
       },
     });
   } catch (error) {
     console.error("Database health check failed:", error);
 
-    res.status(503).json({
+    return res.status(503).json({
       success: false,
       data: {
         service: "Cyber Platform API",
         status: "degraded",
         database: "offline",
-        environment: process.env.NODE_ENV || "development",
+        environment: env.NODE_ENV,
       },
     });
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Cyber Platform API running on http://localhost:${PORT}`);
-  console.log(`Health check: http://localhost:${PORT}/api/v1/health`);
+app.use("/api/v1/auth", authRouter);
+
+app.get(
+  "/api/v1/me",
+  requireAuth,
+  async (req: AuthenticatedRequest, res) => {
+    if (!req.auth) {
+      return res.status(401).json({
+        success: false,
+        message: "Usuario no autenticado",
+      });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: {
+        id: req.auth.userId,
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        status: true,
+        createdAt: true,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "Usuario no encontrado",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        user,
+      },
+    });
+  },
+);
+
+app.listen(env.PORT, () => {
+  console.log(`Cyber Platform API running on http://localhost:${env.PORT}`);
+  console.log(
+    `Health check: http://localhost:${env.PORT}/api/v1/health`,
+  );
 });
