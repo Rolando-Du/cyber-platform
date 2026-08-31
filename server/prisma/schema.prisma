@@ -1,0 +1,313 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  STUDENT
+  INSTRUCTOR
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum ContentStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum CourseLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum LessonBlockType {
+  TEXT
+  HEADING
+  IMAGE
+  VIDEO
+  CODE
+  CALLOUT
+  TABLE
+  DOWNLOAD
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum LessonProgressStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum QuestionType {
+  SINGLE_CHOICE
+  MULTIPLE_CHOICE
+  TRUE_FALSE
+}
+
+enum QuizAttemptStatus {
+  IN_PROGRESS
+  COMPLETED
+}
+
+model User {
+  id           String     @id @default(uuid()) @db.Uuid
+  email        String     @unique
+  passwordHash String
+  firstName    String
+  lastName     String
+  role         UserRole   @default(STUDENT)
+  status       UserStatus @default(ACTIVE)
+
+  enrollments    Enrollment[]
+  lessonProgress LessonProgress[]
+  quizAttempts   QuizAttempt[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
+  @@index([role])
+  @@index([status])
+  @@map("users")
+}
+
+model LearningPath {
+  id          String        @id @default(uuid()) @db.Uuid
+  title       String
+  slug        String        @unique
+  description String?
+  status      ContentStatus @default(DRAFT)
+  order       Int           @default(0)
+
+  courses Course[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([order])
+  @@map("learning_paths")
+}
+
+model Course {
+  id          String        @id @default(uuid()) @db.Uuid
+  pathId      String        @db.Uuid
+  title       String
+  slug        String        @unique
+  description String?
+  level       CourseLevel   @default(BEGINNER)
+  status      ContentStatus @default(DRAFT)
+  order       Int           @default(0)
+
+  path        LearningPath @relation(fields: [pathId], references: [id], onDelete: Cascade)
+  modules     Module[]
+  enrollments Enrollment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([pathId])
+  @@index([status])
+  @@index([level])
+  @@index([order])
+  @@map("courses")
+}
+
+model Module {
+  id          String        @id @default(uuid()) @db.Uuid
+  courseId    String        @db.Uuid
+  title       String
+  description String?
+  status      ContentStatus @default(DRAFT)
+  order       Int           @default(0)
+
+  course  Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons Lesson[]
+  quizzes Quiz[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([courseId])
+  @@index([status])
+  @@index([order])
+  @@map("modules")
+}
+
+model Lesson {
+  id          String        @id @default(uuid()) @db.Uuid
+  moduleId    String        @db.Uuid
+  title       String
+  slug        String        @unique
+  description String?
+  status      ContentStatus @default(DRAFT)
+  order       Int           @default(0)
+
+  module   Module           @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  blocks   LessonBlock[]
+  progress LessonProgress[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([moduleId])
+  @@index([status])
+  @@index([order])
+  @@map("lessons")
+}
+
+model LessonBlock {
+  id       String          @id @default(uuid()) @db.Uuid
+  lessonId String          @db.Uuid
+  type     LessonBlockType
+  content  Json
+  order    Int             @default(0)
+
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([lessonId])
+  @@index([type])
+  @@index([order])
+  @@map("lesson_blocks")
+}
+
+model Enrollment {
+  id       String           @id @default(uuid()) @db.Uuid
+  userId   String           @db.Uuid
+  courseId String           @db.Uuid
+  status   EnrollmentStatus @default(ACTIVE)
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  enrolledAt  DateTime @default(now())
+  completedAt DateTime?
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, courseId])
+  @@index([userId])
+  @@index([courseId])
+  @@index([status])
+  @@map("enrollments")
+}
+
+model LessonProgress {
+  id       String               @id @default(uuid()) @db.Uuid
+  userId   String               @db.Uuid
+  lessonId String               @db.Uuid
+  status   LessonProgressStatus @default(NOT_STARTED)
+  progress Int                  @default(0)
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([userId, lessonId])
+  @@index([userId])
+  @@index([lessonId])
+  @@index([status])
+  @@map("lesson_progress")
+}
+
+model Quiz {
+  id           String        @id @default(uuid()) @db.Uuid
+  moduleId     String        @db.Uuid
+  title        String
+  description  String?
+  status       ContentStatus @default(DRAFT)
+  passingScore Int           @default(70)
+  order        Int           @default(0)
+
+  module    Module        @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  questions Question[]
+  attempts  QuizAttempt[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([moduleId])
+  @@index([status])
+  @@index([order])
+  @@map("quizzes")
+}
+
+model Question {
+  id          String       @id @default(uuid()) @db.Uuid
+  quizId      String       @db.Uuid
+  type        QuestionType
+  text        String
+  explanation String?
+  order       Int          @default(0)
+
+  quiz    Quiz             @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  options QuestionOption[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([quizId])
+  @@index([type])
+  @@index([order])
+  @@map("questions")
+}
+
+model QuestionOption {
+  id         String  @id @default(uuid()) @db.Uuid
+  questionId String  @db.Uuid
+  text       String
+  isCorrect  Boolean @default(false)
+  order      Int     @default(0)
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([questionId])
+  @@index([order])
+  @@map("question_options")
+}
+
+model QuizAttempt {
+  id     String            @id @default(uuid()) @db.Uuid
+  userId String            @db.Uuid
+  quizId String            @db.Uuid
+  status QuizAttemptStatus @default(IN_PROGRESS)
+  score  Int?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([quizId])
+  @@index([status])
+  @@map("quiz_attempts")
+}
