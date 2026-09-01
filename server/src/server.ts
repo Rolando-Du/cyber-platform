@@ -11,6 +11,7 @@ import {
 } from "./middleware/auth.middleware.js";
 import { authRouter } from "./modules/auth/auth.routes.js";
 import { courseRouter } from "./modules/courses/course.routes.js";
+import { enrollmentRouter } from "./modules/enrollments/enrollment.routes.js";
 import { learningPathRouter } from "./modules/learning-paths/learning-path.routes.js";
 import { lessonBlockRouter } from "./modules/lesson-blocks/lesson-block.routes.js";
 import { lessonRouter } from "./modules/lessons/lesson.routes.js";
@@ -57,6 +58,7 @@ app.use("/api/v1/courses", courseRouter);
 app.use("/api/v1/modules", moduleRouter);
 app.use("/api/v1/lessons", lessonRouter);
 app.use("/api/v1/lesson-blocks", lessonBlockRouter);
+app.use("/api/v1/enrollments", enrollmentRouter);
 
 app.get(
   "/api/v1/me",
