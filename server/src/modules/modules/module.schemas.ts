@@ -1,15 +1,5 @@
 import { z } from "zod";
 
-const slugSchema = z
-  .string()
-  .trim()
-  .min(2, "El slug debe tener al menos 2 caracteres")
-  .max(120, "El slug no puede superar los 120 caracteres")
-  .regex(
-    /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
-    "El slug solo puede contener letras minúsculas, números y guiones",
-  );
-
 const titleSchema = z
   .string()
   .trim()
@@ -20,12 +10,6 @@ const descriptionSchema = z
   .string()
   .trim()
   .max(1500, "La descripción no puede superar los 1500 caracteres");
-
-const levelSchema = z.enum([
-  "BEGINNER",
-  "INTERMEDIATE",
-  "ADVANCED",
-]);
 
 const statusSchema = z.enum([
   "DRAFT",
@@ -38,28 +22,22 @@ const orderSchema = z.coerce
   .int()
   .min(0, "El orden no puede ser negativo");
 
-export const createCourseSchema = z.object({
-  pathId: z.uuid("El id de la ruta de aprendizaje no es válido"),
+export const createModuleSchema = z.object({
+  courseId: z.uuid("El id del curso no es válido"),
 
   title: titleSchema,
 
-  slug: slugSchema,
-
   description: descriptionSchema.optional(),
-
-  level: levelSchema.default("BEGINNER"),
 
   status: statusSchema.default("DRAFT"),
 
   order: orderSchema.default(0),
 });
 
-export const updateCourseSchema = z
+export const updateModuleSchema = z
   .object({
     title: titleSchema.optional(),
-    slug: slugSchema.optional(),
     description: descriptionSchema.optional(),
-    level: levelSchema.optional(),
     status: statusSchema.optional(),
     order: orderSchema.optional(),
   })
@@ -67,9 +45,9 @@ export const updateCourseSchema = z
     message: "Debe enviarse al menos un campo para actualizar",
   });
 
-export const courseIdParamSchema = z.object({
-  id: z.uuid("El id del curso no es válido"),
+export const moduleIdParamSchema = z.object({
+  id: z.uuid("El id del módulo no es válido"),
 });
 
-export type CreateCourseInput = z.infer<typeof createCourseSchema>;
-export type UpdateCourseInput = z.infer<typeof updateCourseSchema>;
+export type CreateModuleInput = z.infer<typeof createModuleSchema>;
+export type UpdateModuleInput = z.infer<typeof updateModuleSchema>;

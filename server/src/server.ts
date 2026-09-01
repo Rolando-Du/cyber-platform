@@ -12,6 +12,7 @@ import {
 import { authRouter } from "./modules/auth/auth.routes.js";
 import { courseRouter } from "./modules/courses/course.routes.js";
 import { learningPathRouter } from "./modules/learning-paths/learning-path.routes.js";
+import { moduleRouter } from "./modules/modules/module.routes.js";
 
 const app = express();
 
@@ -51,6 +52,7 @@ app.get("/api/v1/health", async (_req, res) => {
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/learning-paths", learningPathRouter);
 app.use("/api/v1/courses", courseRouter);
+app.use("/api/v1/modules", moduleRouter);
 
 app.get(
   "/api/v1/me",
