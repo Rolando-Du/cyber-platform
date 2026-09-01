@@ -46,6 +46,33 @@ export const getUserQuizAttemptById = async (
           },
         },
       },
+      answers: {
+        orderBy: {
+          createdAt: "asc",
+        },
+        include: {
+          question: {
+            select: {
+              id: true,
+              type: true,
+              text: true,
+              explanation: true,
+              order: true,
+            },
+          },
+          selectedOptions: {
+            include: {
+              option: {
+                select: {
+                  id: true,
+                  text: true,
+                  order: true,
+                },
+              },
+            },
+          },
+        },
+      },
     },
   });
 };
@@ -218,6 +245,12 @@ export const submitQuizAttempt = async (
     throw new Error("ALL_QUESTIONS_MUST_BE_ANSWERED");
   }
 
+  const evaluatedAnswers: Array<{
+    questionId: string;
+    selectedOptionIds: string[];
+    isCorrect: boolean;
+  }> = [];
+
   let correctAnswers = 0;
 
   for (const question of attempt.quiz.questions) {
@@ -268,6 +301,12 @@ export const submitQuizAttempt = async (
     if (isCorrect) {
       correctAnswers += 1;
     }
+
+    evaluatedAnswers.push({
+      questionId: question.id,
+      selectedOptionIds: [...selectedOptionIds],
+      isCorrect,
+    });
   }
 
   const totalQuestions = attempt.quiz.questions.length;
@@ -276,27 +315,101 @@ export const submitQuizAttempt = async (
     (correctAnswers / totalQuestions) * 100,
   );
 
-  const completedAttempt = await prisma.quizAttempt.update({
-    where: {
-      id,
-    },
-    data: {
-      status: "COMPLETED",
-      score,
-      completedAt: new Date(),
-    },
-    include: {
-      quiz: {
+  const completedAt = new Date();
+
+  const completedAttempt = await prisma.$transaction(
+    async (tx) => {
+      const updatedAttempt = await tx.quizAttempt.updateMany({
+        where: {
+          id,
+          userId,
+          status: "IN_PROGRESS",
+        },
+        data: {
+          status: "COMPLETED",
+          score,
+          completedAt,
+        },
+      });
+
+      if (updatedAttempt.count === 0) {
+        throw new Error("QUIZ_ATTEMPT_ALREADY_COMPLETED");
+      }
+
+      for (const answer of evaluatedAnswers) {
+        await tx.quizAttemptAnswer.create({
+          data: {
+            attempt: {
+              connect: {
+                id,
+              },
+            },
+            question: {
+              connect: {
+                id: answer.questionId,
+              },
+            },
+            isCorrect: answer.isCorrect,
+            selectedOptions: {
+              create: answer.selectedOptionIds.map(
+                (optionId) => ({
+                  option: {
+                    connect: {
+                      id: optionId,
+                    },
+                  },
+                }),
+              ),
+            },
+          },
+        });
+      }
+
+      return tx.quizAttempt.findUniqueOrThrow({
+        where: {
+          id,
+        },
         include: {
-          module: {
+          quiz: {
             include: {
-              course: true,
+              module: {
+                include: {
+                  course: true,
+                },
+              },
+            },
+          },
+          answers: {
+            orderBy: {
+              createdAt: "asc",
+            },
+            include: {
+              question: {
+                select: {
+                  id: true,
+                  type: true,
+                  text: true,
+                  explanation: true,
+                  order: true,
+                },
+              },
+              selectedOptions: {
+                include: {
+                  option: {
+                    select: {
+                      id: true,
+                      text: true,
+                      order: true,
+                    },
+                  },
+                },
+              },
             },
           },
         },
-      },
+      });
     },
-  });
+  );
 
   return {
     attempt: completedAttempt,

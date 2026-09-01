@@ -262,8 +262,9 @@ model Question {
   explanation String?
   order       Int          @default(0)
 
-  quiz    Quiz             @relation(fields: [quizId], references: [id], onDelete: Cascade)
-  options QuestionOption[]
+  quiz           Quiz                @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  options        QuestionOption[]
+  attemptAnswers QuizAttemptAnswer[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -281,7 +282,8 @@ model QuestionOption {
   isCorrect  Boolean @default(false)
   order      Int     @default(0)
 
-  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  question          Question                  @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  selectedInAnswers QuizAttemptAnswerOption[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -298,8 +300,9 @@ model QuizAttempt {
   status QuizAttemptStatus @default(IN_PROGRESS)
   score  Int?
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  user    User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quiz    Quiz                @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  answers QuizAttemptAnswer[]
 
   startedAt   DateTime  @default(now())
   completedAt DateTime?
@@ -310,4 +313,36 @@ model QuizAttempt {
   @@index([quizId])
   @@index([status])
   @@map("quiz_attempts")
+}
+
+model QuizAttemptAnswer {
+  id         String  @id @default(uuid()) @db.Uuid
+  attemptId  String  @db.Uuid
+  questionId String  @db.Uuid
+  isCorrect  Boolean @default(false)
+
+  attempt         QuizAttempt               @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question        Question                  @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  selectedOptions QuizAttemptAnswerOption[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([attemptId, questionId])
+  @@index([attemptId])
+  @@index([questionId])
+  @@index([isCorrect])
+  @@map("quiz_attempt_answers")
+}
+
+model QuizAttemptAnswerOption {
+  answerId String @db.Uuid
+  optionId String @db.Uuid
+
+  answer QuizAttemptAnswer @relation(fields: [answerId], references: [id], onDelete: Cascade)
+  option QuestionOption    @relation(fields: [optionId], references: [id], onDelete: Cascade)
+
+  @@id([answerId, optionId])
+  @@index([optionId])
+  @@map("quiz_attempt_answer_options")
 }
