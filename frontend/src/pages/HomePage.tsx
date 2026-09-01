@@ -10,6 +10,7 @@ import {
   getStoredUser,
 } from "../lib/auth";
 import { validateSession } from "../lib/session";
+
 import {
   getMyEnrollments,
   type Enrollment,
@@ -30,6 +31,7 @@ function ShieldIcon() {
         strokeLinecap="round"
         strokeLinejoin="round"
       />
+
       <path
         d="m9.5 12 1.7 1.7 3.6-4"
         stroke="currentColor"
@@ -75,10 +77,30 @@ function LogoutIcon() {
         strokeLinecap="round"
         strokeLinejoin="round"
       />
+
       <path
         d="M14 8l4 4-4 4M9 12h9"
         stroke="currentColor"
         strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+      className="h-4 w-4"
+    >
+      <path
+        d="m5 12 4 4L19 6"
+        stroke="currentColor"
+        strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
@@ -105,11 +127,12 @@ const enrollmentStatusLabels = {
 };
 
 function HomePage() {
-  const [user, setUser] = useState(() => getStoredUser());
+  const [user, setUser] = useState(
+    () => getStoredUser(),
+  );
 
-  const [enrollments, setEnrollments] = useState<
-    Enrollment[]
-  >([]);
+  const [enrollments, setEnrollments] =
+    useState<Enrollment[]>([]);
 
   const [
     isLoadingEnrollments,
@@ -179,15 +202,18 @@ function HomePage() {
   }, []);
 
   const stats = useMemo(() => {
-    const activeCourses = enrollments.filter(
-      (enrollment) =>
-        enrollment.status === "ACTIVE",
-    ).length;
+    const activeCourses =
+      enrollments.filter(
+        (enrollment) =>
+          enrollment.status === "ACTIVE",
+      ).length;
 
-    const completedCourses = enrollments.filter(
-      (enrollment) =>
-        enrollment.status === "COMPLETED",
-    ).length;
+    const completedCourses =
+      enrollments.filter(
+        (enrollment) =>
+          enrollment.status ===
+          "COMPLETED",
+      ).length;
 
     return [
       {
@@ -210,6 +236,16 @@ function HomePage() {
       (enrollment) =>
         enrollment.status === "ACTIVE",
     ) ?? enrollments[0];
+
+  const isCurrentCourseCompleted =
+    currentEnrollment?.status ===
+    "COMPLETED";
+
+  const hasActiveCourses =
+    enrollments.some(
+      (enrollment) =>
+        enrollment.status === "ACTIVE",
+    );
 
   const handleLogout = () => {
     clearSession();
@@ -339,10 +375,12 @@ function HomePage() {
               </h1>
 
               <p className="mt-6 max-w-2xl text-base leading-7 text-slate-400 sm:text-lg">
-                Una plataforma diseñada para aprender redes,
-                sistemas, análisis de tráfico, seguridad
-                defensiva y hacking ético mediante teoría,
-                práctica y evaluaciones.
+                Una plataforma diseñada para
+                aprender redes, sistemas,
+                análisis de tráfico, seguridad
+                defensiva y hacking ético
+                mediante teoría, práctica y
+                evaluaciones.
               </p>
 
               <div className="mt-8 flex flex-wrap gap-3">
@@ -351,7 +389,10 @@ function HomePage() {
                     href="#cursos"
                     className="inline-flex items-center gap-2 rounded-lg bg-cyan-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
                   >
-                    Continuar aprendiendo
+                    {hasActiveCourses
+                      ? "Continuar aprendiendo"
+                      : "Revisar mis cursos"}
+
                     <ArrowIcon />
                   </a>
                 ) : (
@@ -385,8 +426,16 @@ function HomePage() {
                 <>
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-400">
-                        Continuar aprendiendo
+                      <p
+                        className={`text-xs font-semibold uppercase tracking-[0.2em] ${
+                          isCurrentCourseCompleted
+                            ? "text-emerald-400"
+                            : "text-cyan-400"
+                        }`}
+                      >
+                        {isCurrentCourseCompleted
+                          ? "Curso completado"
+                          : "Continuar aprendiendo"}
                       </p>
 
                       <h2 className="mt-2 text-xl font-semibold text-white">
@@ -404,8 +453,18 @@ function HomePage() {
                       </p>
                     </div>
 
-                    <div className="rounded-xl bg-cyan-400/10 p-3 text-cyan-300">
-                      <ShieldIcon />
+                    <div
+                      className={`rounded-xl p-3 ${
+                        isCurrentCourseCompleted
+                          ? "bg-emerald-400/10 text-emerald-300"
+                          : "bg-cyan-400/10 text-cyan-300"
+                      }`}
+                    >
+                      {isCurrentCourseCompleted ? (
+                        <CheckIcon />
+                      ) : (
+                        <ShieldIcon />
+                      )}
                     </div>
                   </div>
 
@@ -415,7 +474,13 @@ function HomePage() {
                         Estado
                       </p>
 
-                      <p className="mt-2 text-sm font-medium text-white">
+                      <p
+                        className={`mt-2 text-sm font-medium ${
+                          isCurrentCourseCompleted
+                            ? "text-emerald-300"
+                            : "text-white"
+                        }`}
+                      >
                         {
                           enrollmentStatusLabels[
                             currentEnrollment
@@ -442,20 +507,32 @@ function HomePage() {
 
                   <div className="mt-4 rounded-xl border border-slate-800 bg-slate-950/70 p-4">
                     <p className="text-xs uppercase tracking-wider text-slate-500">
-                      Curso actual
+                      {isCurrentCourseCompleted
+                        ? "Curso completado"
+                        : "Curso actual"}
                     </p>
 
                     <p className="mt-2 text-sm leading-6 text-slate-400">
-                      {currentEnrollment.course
-                        .description ??
-                        "Continuá avanzando en este curso para completar tu ruta de aprendizaje."}
+                      {isCurrentCourseCompleted
+                        ? "Completaste todos los contenidos y evaluaciones requeridas. Podés volver a revisar el material cuando quieras."
+                        : currentEnrollment
+                              .course
+                              .description ??
+                          "Continuá avanzando en este curso para completar tu ruta de aprendizaje."}
                     </p>
 
                     <Link
                       to={`/courses/${currentEnrollment.course.id}`}
-                      className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-cyan-400 transition hover:text-cyan-300"
+                      className={`mt-4 inline-flex items-center gap-2 text-sm font-medium transition ${
+                        isCurrentCourseCompleted
+                          ? "text-emerald-300 hover:text-emerald-200"
+                          : "text-cyan-400 hover:text-cyan-300"
+                      }`}
                     >
-                      Abrir curso
+                      {isCurrentCourseCompleted
+                        ? "Revisar curso"
+                        : "Abrir curso"}
+
                       <ArrowIcon />
                     </Link>
                   </div>
@@ -537,23 +614,25 @@ function HomePage() {
             </div>
           )}
 
-          {user && isLoadingEnrollments && (
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-8 text-center text-sm text-slate-500">
-              Cargando tus cursos...
-            </div>
-          )}
+          {user &&
+            isLoadingEnrollments && (
+              <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-8 text-center text-sm text-slate-500">
+                Cargando tus cursos...
+              </div>
+            )}
 
           {user &&
             !isLoadingEnrollments &&
             enrollments.length === 0 && (
               <div className="rounded-2xl border border-dashed border-slate-800 bg-slate-900/30 p-10 text-center">
                 <p className="font-medium text-white">
-                  No tenés cursos inscriptos.
+                  No tenés cursos
+                  inscriptos.
                 </p>
 
                 <p className="mt-2 text-sm text-slate-500">
-                  Tus próximos cursos aparecerán
-                  en esta sección.
+                  Tus próximos cursos
+                  aparecerán en esta sección.
                 </p>
               </div>
             )}
@@ -563,69 +642,92 @@ function HomePage() {
             enrollments.length > 0 && (
               <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
                 {enrollments.map(
-                  (enrollment) => (
-                    <article
-                      key={enrollment.id}
-                      className="group flex min-h-72 flex-col rounded-2xl border border-slate-800 bg-slate-900/50 p-6 transition hover:-translate-y-1 hover:border-slate-700 hover:bg-slate-900"
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="rounded-full bg-slate-800 px-3 py-1 text-xs font-medium text-slate-300">
-                          {
-                            courseLevelLabels[
-                              enrollment.course
-                                .level
-                            ]
-                          }
-                        </span>
+                  (enrollment) => {
+                    const isCompleted =
+                      enrollment.status ===
+                      "COMPLETED";
 
-                        <span className="text-xs text-slate-500">
+                    return (
+                      <article
+                        key={enrollment.id}
+                        className="group flex min-h-72 flex-col rounded-2xl border border-slate-800 bg-slate-900/50 p-6 transition hover:-translate-y-1 hover:border-slate-700 hover:bg-slate-900"
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="rounded-full bg-slate-800 px-3 py-1 text-xs font-medium text-slate-300">
+                            {
+                              courseLevelLabels[
+                                enrollment
+                                  .course.level
+                              ]
+                            }
+                          </span>
+
+                          <span className="text-xs text-slate-500">
+                            {
+                              enrollment.course
+                                ._count.modules
+                            }{" "}
+                            módulos
+                          </span>
+                        </div>
+
+                        <p className="mt-5 text-xs font-medium text-cyan-400">
                           {
                             enrollment.course
-                              ._count.modules
-                          }{" "}
-                          módulos
-                        </span>
-                      </div>
-
-                      <p className="mt-5 text-xs font-medium text-cyan-400">
-                        {
-                          enrollment.course.path
-                            .title
-                        }
-                      </p>
-
-                      <h3 className="mt-2 text-xl font-semibold text-white">
-                        {
-                          enrollment.course
-                            .title
-                        }
-                      </h3>
-
-                      <p className="mt-3 flex-1 text-sm leading-6 text-slate-400">
-                        {enrollment.course
-                          .description ??
-                          "Curso de formación en ciberseguridad."}
-                      </p>
-
-                      <div className="mt-6 flex items-center justify-between border-t border-slate-800 pt-5">
-                        <span className="text-xs font-medium text-slate-500">
-                          {
-                            enrollmentStatusLabels[
-                              enrollment.status
-                            ]
+                              .path.title
                           }
-                        </span>
+                        </p>
 
-                        <Link
-                          to={`/courses/${enrollment.course.id}`}
-                          className="inline-flex items-center gap-2 text-sm font-medium text-cyan-400 transition group-hover:text-cyan-300"
-                        >
-                          Abrir curso
-                          <ArrowIcon />
-                        </Link>
-                      </div>
-                    </article>
-                  ),
+                        <h3 className="mt-2 text-xl font-semibold text-white">
+                          {
+                            enrollment.course
+                              .title
+                          }
+                        </h3>
+
+                        <p className="mt-3 flex-1 text-sm leading-6 text-slate-400">
+                          {enrollment.course
+                            .description ??
+                            "Curso de formación en ciberseguridad."}
+                        </p>
+
+                        <div className="mt-6 flex items-center justify-between border-t border-slate-800 pt-5">
+                          <span
+                            className={`inline-flex items-center gap-1 text-xs font-medium ${
+                              isCompleted
+                                ? "text-emerald-300"
+                                : "text-slate-500"
+                            }`}
+                          >
+                            {isCompleted && (
+                              <CheckIcon />
+                            )}
+
+                            {
+                              enrollmentStatusLabels[
+                                enrollment.status
+                              ]
+                            }
+                          </span>
+
+                          <Link
+                            to={`/courses/${enrollment.course.id}`}
+                            className={`inline-flex items-center gap-2 text-sm font-medium transition ${
+                              isCompleted
+                                ? "text-emerald-300 group-hover:text-emerald-200"
+                                : "text-cyan-400 group-hover:text-cyan-300"
+                            }`}
+                          >
+                            {isCompleted
+                              ? "Revisar curso"
+                              : "Abrir curso"}
+
+                            <ArrowIcon />
+                          </Link>
+                        </div>
+                      </article>
+                    );
+                  },
                 )}
               </div>
             )}
