@@ -451,13 +451,13 @@ function HomePage() {
                         "Continuá avanzando en este curso para completar tu ruta de aprendizaje."}
                     </p>
 
-                    <button
-                      type="button"
+                    <Link
+                      to={`/courses/${currentEnrollment.course.id}`}
                       className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-cyan-400 transition hover:text-cyan-300"
                     >
                       Abrir curso
                       <ArrowIcon />
-                    </button>
+                    </Link>
                   </div>
                 </>
               ) : (
@@ -616,13 +616,13 @@ function HomePage() {
                           }
                         </span>
 
-                        <button
-                          type="button"
+                        <Link
+                          to={`/courses/${enrollment.course.id}`}
                           className="inline-flex items-center gap-2 text-sm font-medium text-cyan-400 transition group-hover:text-cyan-300"
                         >
                           Abrir curso
                           <ArrowIcon />
-                        </button>
+                        </Link>
                       </div>
                     </article>
                   ),
