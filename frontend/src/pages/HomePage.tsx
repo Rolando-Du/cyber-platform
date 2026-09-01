@@ -1,10 +1,14 @@
-import { useState } from "react";
+import {
+  useEffect,
+  useState,
+} from "react";
 import { Link } from "react-router-dom";
 
 import {
   clearSession,
   getStoredUser,
 } from "../lib/auth";
+import { validateSession } from "../lib/session";
 
 const courses = [
   {
@@ -128,6 +132,32 @@ const roleLabels = {
 function HomePage() {
   const [user, setUser] = useState(() => getStoredUser());
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const checkSession = async () => {
+      try {
+        const validatedUser =
+          await validateSession();
+
+        if (isMounted) {
+          setUser(validatedUser);
+        }
+      } catch (error) {
+        console.error(
+          "Session validation error:",
+          error,
+        );
+      }
+    };
+
+    void checkSession();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const handleLogout = () => {
     clearSession();
     setUser(null);
@@ -185,13 +215,18 @@ function HomePage() {
           {user ? (
             <div className="flex shrink-0 items-center gap-2 rounded-xl border border-slate-800 bg-slate-900/70 p-1.5">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-cyan-500/20 bg-cyan-500/10 text-sm font-semibold text-cyan-300">
-                {user.firstName.charAt(0).toUpperCase()}
-                {user.lastName.charAt(0).toUpperCase()}
+                {user.firstName
+                  .charAt(0)
+                  .toUpperCase()}
+                {user.lastName
+                  .charAt(0)
+                  .toUpperCase()}
               </div>
 
               <div className="hidden min-w-0 px-2 sm:block">
                 <p className="max-w-40 truncate text-sm font-semibold leading-5 text-white">
-                  {user.firstName} {user.lastName}
+                  {user.firstName}{" "}
+                  {user.lastName}
                 </p>
 
                 <p className="text-xs leading-4 text-slate-500">
@@ -204,6 +239,8 @@ function HomePage() {
               <button
                 type="button"
                 onClick={handleLogout}
+                title="Cerrar sesión"
+                aria-label="Cerrar sesión"
                 className="inline-flex h-10 items-center gap-2 rounded-lg px-3 text-sm font-medium text-slate-400 transition hover:bg-slate-800 hover:text-white"
               >
                 <LogoutIcon />
