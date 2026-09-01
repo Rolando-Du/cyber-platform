@@ -19,6 +19,7 @@ import { lessonRouter } from "./modules/lessons/lesson.routes.js";
 import { moduleRouter } from "./modules/modules/module.routes.js";
 import { questionOptionRouter } from "./modules/question-options/question-option.routes.js";
 import { questionRouter } from "./modules/questions/question.routes.js";
+import { quizAttemptRouter } from "./modules/quiz-attempts/quiz-attempt.routes.js";
 import { quizRouter } from "./modules/quizzes/quiz.routes.js";
 
 const app = express();
@@ -67,6 +68,7 @@ app.use("/api/v1/lesson-progress", lessonProgressRouter);
 app.use("/api/v1/quizzes", quizRouter);
 app.use("/api/v1/questions", questionRouter);
 app.use("/api/v1/question-options", questionOptionRouter);
+app.use("/api/v1/quiz-attempts", quizAttemptRouter);
 
 app.get(
   "/api/v1/me",
