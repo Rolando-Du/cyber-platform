@@ -5,6 +5,17 @@ import type {
   UpdateQuestionOptionInput,
 } from "./question-option.schemas.js";
 
+const publicQuestionSelect = {
+  id: true,
+  quizId: true,
+  type: true,
+  text: true,
+  order: true,
+  createdAt: true,
+  updatedAt: true,
+  quiz: true,
+} as const;
+
 export const getQuestionOptions = async () => {
   return prisma.questionOption.findMany({
     orderBy: [
@@ -15,11 +26,15 @@ export const getQuestionOptions = async () => {
         createdAt: "asc",
       },
     ],
-    include: {
+    select: {
+      id: true,
+      questionId: true,
+      text: true,
+      order: true,
+      createdAt: true,
+      updatedAt: true,
       question: {
-        include: {
-          quiz: true,
-        },
+        select: publicQuestionSelect,
       },
     },
   });
@@ -30,11 +45,15 @@ export const getQuestionOptionById = async (id: string) => {
     where: {
       id,
     },
-    include: {
+    select: {
+      id: true,
+      questionId: true,
+      text: true,
+      order: true,
+      createdAt: true,
+      updatedAt: true,
       question: {
-        include: {
-          quiz: true,
-        },
+        select: publicQuestionSelect,
       },
     },
   });
@@ -61,18 +80,21 @@ export const createQuestionOption = async (
     question.type === "SINGLE_CHOICE" &&
     input.isCorrect
   ) {
-    const existingCorrectOption = await prisma.questionOption.findFirst({
-      where: {
-        questionId: input.questionId,
-        isCorrect: true,
-      },
-      select: {
-        id: true,
-      },
-    });
+    const existingCorrectOption =
+      await prisma.questionOption.findFirst({
+        where: {
+          questionId: input.questionId,
+          isCorrect: true,
+        },
+        select: {
+          id: true,
+        },
+      });
 
     if (existingCorrectOption) {
-      throw new Error("SINGLE_CHOICE_CORRECT_OPTION_ALREADY_EXISTS");
+      throw new Error(
+        "SINGLE_CHOICE_CORRECT_OPTION_ALREADY_EXISTS",
+      );
     }
   }
 
@@ -120,21 +142,24 @@ export const updateQuestionOption = async (
     existingOption.question.type === "SINGLE_CHOICE" &&
     input.isCorrect === true
   ) {
-    const existingCorrectOption = await prisma.questionOption.findFirst({
-      where: {
-        questionId: existingOption.questionId,
-        isCorrect: true,
-        NOT: {
-          id,
+    const existingCorrectOption =
+      await prisma.questionOption.findFirst({
+        where: {
+          questionId: existingOption.questionId,
+          isCorrect: true,
+          NOT: {
+            id,
+          },
         },
-      },
-      select: {
-        id: true,
-      },
-    });
+        select: {
+          id: true,
+        },
+      });
 
     if (existingCorrectOption) {
-      throw new Error("SINGLE_CHOICE_CORRECT_OPTION_ALREADY_EXISTS");
+      throw new Error(
+        "SINGLE_CHOICE_CORRECT_OPTION_ALREADY_EXISTS",
+      );
     }
   }
 
