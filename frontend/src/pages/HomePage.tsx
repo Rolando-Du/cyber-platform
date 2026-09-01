@@ -1,3 +1,11 @@
+import { useState } from "react";
+import { Link } from "react-router-dom";
+
+import {
+  clearSession,
+  getStoredUser,
+} from "../lib/auth";
+
 const courses = [
   {
     title: "Fundamentos de Redes",
@@ -85,13 +93,52 @@ function ArrowIcon() {
   );
 }
 
+function LogoutIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+      className="h-4 w-4"
+    >
+      <path
+        d="M10 6H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h4"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M14 8l4 4-4 4M9 12h9"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+const roleLabels = {
+  STUDENT: "Estudiante",
+  INSTRUCTOR: "Instructor",
+  ADMIN: "Administrador",
+};
+
 function HomePage() {
+  const [user, setUser] = useState(() => getStoredUser());
+
+  const handleLogout = () => {
+    clearSession();
+    setUser(null);
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
       <header className="border-b border-slate-800/80 bg-slate-950/90 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 lg:px-8">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-cyan-400 text-slate-950">
+        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between gap-6 px-5 lg:px-8">
+          <div className="flex shrink-0 items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-400 text-slate-950">
               <ShieldIcon />
             </div>
 
@@ -105,7 +152,7 @@ function HomePage() {
             </div>
           </div>
 
-          <nav className="hidden items-center gap-8 text-sm text-slate-400 md:flex">
+          <nav className="hidden items-center gap-8 text-sm text-slate-400 lg:flex">
             <a
               href="#inicio"
               className="font-medium text-white transition hover:text-cyan-300"
@@ -113,25 +160,67 @@ function HomePage() {
               Inicio
             </a>
 
-            <a href="#rutas" className="transition hover:text-white">
+            <a
+              href="#rutas"
+              className="transition hover:text-white"
+            >
               Rutas
             </a>
 
-            <a href="#cursos" className="transition hover:text-white">
+            <a
+              href="#cursos"
+              className="transition hover:text-white"
+            >
               Cursos
             </a>
 
-            <a href="#progreso" className="transition hover:text-white">
+            <a
+              href="#progreso"
+              className="transition hover:text-white"
+            >
               Progreso
             </a>
           </nav>
 
-          <button
-            type="button"
-            className="rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-slate-600 hover:bg-slate-800"
-          >
-            Iniciar sesión
-          </button>
+          {user ? (
+            <div className="flex shrink-0 items-center gap-2 rounded-xl border border-slate-800 bg-slate-900/70 p-1.5">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-cyan-500/20 bg-cyan-500/10 text-sm font-semibold text-cyan-300">
+                {user.firstName.charAt(0).toUpperCase()}
+                {user.lastName.charAt(0).toUpperCase()}
+              </div>
+
+              <div className="hidden min-w-0 px-2 sm:block">
+                <p className="max-w-40 truncate text-sm font-semibold leading-5 text-white">
+                  {user.firstName} {user.lastName}
+                </p>
+
+                <p className="text-xs leading-4 text-slate-500">
+                  {roleLabels[user.role]}
+                </p>
+              </div>
+
+              <div className="mx-1 hidden h-7 w-px bg-slate-800 sm:block" />
+
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="inline-flex h-10 items-center gap-2 rounded-lg px-3 text-sm font-medium text-slate-400 transition hover:bg-slate-800 hover:text-white"
+              >
+                <LogoutIcon />
+
+                <span className="hidden xl:inline">
+                  Cerrar sesión
+                </span>
+              </button>
+            </div>
+          ) : (
+            <Link
+              to="/login"
+              className="shrink-0 rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-slate-600 hover:bg-slate-800"
+            >
+              Iniciar sesión
+            </Link>
+          )}
         </div>
       </header>
 
@@ -164,13 +253,23 @@ function HomePage() {
               </p>
 
               <div className="mt-8 flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  className="inline-flex items-center gap-2 rounded-lg bg-cyan-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
-                >
-                  Comenzar a aprender
-                  <ArrowIcon />
-                </button>
+                {user ? (
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-2 rounded-lg bg-cyan-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
+                  >
+                    Continuar aprendiendo
+                    <ArrowIcon />
+                  </button>
+                ) : (
+                  <Link
+                    to="/login"
+                    className="inline-flex items-center gap-2 rounded-lg bg-cyan-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
+                  >
+                    Comenzar a aprender
+                    <ArrowIcon />
+                  </Link>
+                )}
 
                 <button
                   type="button"
@@ -207,6 +306,7 @@ function HomePage() {
                   <span className="text-slate-400">
                     Progreso del curso
                   </span>
+
                   <span className="font-semibold text-white">
                     35%
                   </span>
@@ -256,6 +356,7 @@ function HomePage() {
                 <p className="text-sm text-slate-500">
                   {stat.label}
                 </p>
+
                 <p className="mt-2 text-3xl font-semibold text-white">
                   {stat.value}
                 </p>
@@ -338,6 +439,7 @@ function HomePage() {
                   {course.progress > 0
                     ? "Continuar curso"
                     : "Ver curso"}
+
                   <ArrowIcon />
                 </button>
               </article>
@@ -349,7 +451,10 @@ function HomePage() {
       <footer className="border-t border-slate-800">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-5 py-8 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between lg:px-8">
           <p>Cyber Platform</p>
-          <p>Plataforma de aprendizaje en ciberseguridad.</p>
+
+          <p>
+            Plataforma de aprendizaje en ciberseguridad.
+          </p>
         </div>
       </footer>
     </div>
