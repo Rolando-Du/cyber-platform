@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useMemo,
   useState,
 } from "react";
 import { Link } from "react-router-dom";
@@ -9,48 +10,10 @@ import {
   getStoredUser,
 } from "../lib/auth";
 import { validateSession } from "../lib/session";
-
-const courses = [
-  {
-    title: "Fundamentos de Redes",
-    description:
-      "Aprendé cómo se comunican los dispositivos, los protocolos principales y las bases necesarias para ciberseguridad.",
-    level: "Principiante",
-    progress: 35,
-    modules: 5,
-  },
-  {
-    title: "Administración de Sistemas",
-    description:
-      "Conocé los fundamentos de Linux y Windows desde la perspectiva de administración y seguridad.",
-    level: "Principiante",
-    progress: 0,
-    modules: 4,
-  },
-  {
-    title: "Análisis de Tráfico",
-    description:
-      "Introducción al análisis de paquetes y tráfico de red utilizando herramientas especializadas.",
-    level: "Intermedio",
-    progress: 0,
-    modules: 4,
-  },
-];
-
-const stats = [
-  {
-    label: "Cursos activos",
-    value: "1",
-  },
-  {
-    label: "Lecciones completadas",
-    value: "1",
-  },
-  {
-    label: "Evaluaciones",
-    value: "2",
-  },
-];
+import {
+  getMyEnrollments,
+  type Enrollment,
+} from "../services/enrollment.service";
 
 function ShieldIcon() {
   return (
@@ -129,38 +92,130 @@ const roleLabels = {
   ADMIN: "Administrador",
 };
 
+const courseLevelLabels = {
+  BEGINNER: "Principiante",
+  INTERMEDIATE: "Intermedio",
+  ADVANCED: "Avanzado",
+};
+
+const enrollmentStatusLabels = {
+  ACTIVE: "En curso",
+  COMPLETED: "Completado",
+  CANCELLED: "Cancelado",
+};
+
 function HomePage() {
   const [user, setUser] = useState(() => getStoredUser());
+
+  const [enrollments, setEnrollments] = useState<
+    Enrollment[]
+  >([]);
+
+  const [
+    isLoadingEnrollments,
+    setIsLoadingEnrollments,
+  ] = useState(false);
+
+  const [
+    enrollmentsError,
+    setEnrollmentsError,
+  ] = useState("");
 
   useEffect(() => {
     let isMounted = true;
 
-    const checkSession = async () => {
+    const loadHomeData = async () => {
       try {
         const validatedUser =
           await validateSession();
 
+        if (!isMounted) {
+          return;
+        }
+
+        setUser(validatedUser);
+
+        if (!validatedUser) {
+          setEnrollments([]);
+          return;
+        }
+
+        setIsLoadingEnrollments(true);
+        setEnrollmentsError("");
+
+        const userEnrollments =
+          await getMyEnrollments();
+
         if (isMounted) {
-          setUser(validatedUser);
+          setEnrollments(userEnrollments);
         }
       } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+
         console.error(
-          "Session validation error:",
+          "Home data error:",
           error,
         );
+
+        setEnrollmentsError(
+          error instanceof Error
+            ? error.message
+            : "No fue posible cargar tus cursos",
+        );
+      } finally {
+        if (isMounted) {
+          setIsLoadingEnrollments(false);
+        }
       }
     };
 
-    void checkSession();
+    void loadHomeData();
 
     return () => {
       isMounted = false;
     };
   }, []);
 
+  const stats = useMemo(() => {
+    const activeCourses = enrollments.filter(
+      (enrollment) =>
+        enrollment.status === "ACTIVE",
+    ).length;
+
+    const completedCourses = enrollments.filter(
+      (enrollment) =>
+        enrollment.status === "COMPLETED",
+    ).length;
+
+    return [
+      {
+        label: "Cursos activos",
+        value: activeCourses,
+      },
+      {
+        label: "Cursos completados",
+        value: completedCourses,
+      },
+      {
+        label: "Cursos inscriptos",
+        value: enrollments.length,
+      },
+    ];
+  }, [enrollments]);
+
+  const currentEnrollment =
+    enrollments.find(
+      (enrollment) =>
+        enrollment.status === "ACTIVE",
+    ) ?? enrollments[0];
+
   const handleLogout = () => {
     clearSession();
     setUser(null);
+    setEnrollments([]);
+    setEnrollmentsError("");
   };
 
   return (
@@ -176,6 +231,7 @@ function HomePage() {
               <p className="text-sm font-semibold tracking-wide text-white">
                 Cyber Platform
               </p>
+
               <p className="text-xs text-slate-500">
                 Learning Security
               </p>
@@ -284,20 +340,20 @@ function HomePage() {
 
               <p className="mt-6 max-w-2xl text-base leading-7 text-slate-400 sm:text-lg">
                 Una plataforma diseñada para aprender redes,
-                sistemas, análisis de tráfico, seguridad defensiva
-                y hacking ético mediante teoría, práctica y
-                evaluaciones.
+                sistemas, análisis de tráfico, seguridad
+                defensiva y hacking ético mediante teoría,
+                práctica y evaluaciones.
               </p>
 
               <div className="mt-8 flex flex-wrap gap-3">
                 {user ? (
-                  <button
-                    type="button"
+                  <a
+                    href="#cursos"
                     className="inline-flex items-center gap-2 rounded-lg bg-cyan-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
                   >
                     Continuar aprendiendo
                     <ArrowIcon />
-                  </button>
+                  </a>
                 ) : (
                   <Link
                     to="/login"
@@ -308,103 +364,152 @@ function HomePage() {
                   </Link>
                 )}
 
-                <button
-                  type="button"
+                <a
+                  href="#cursos"
                   className="rounded-lg border border-slate-700 px-5 py-3 text-sm font-medium text-slate-200 transition hover:bg-slate-900"
                 >
                   Explorar cursos
-                </button>
+                </a>
               </div>
             </div>
 
             <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6 shadow-2xl shadow-cyan-950/20">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-400">
-                    Tu progreso
+              {user &&
+              isLoadingEnrollments ? (
+                <div className="flex min-h-64 items-center justify-center">
+                  <p className="text-sm text-slate-500">
+                    Cargando tus cursos...
                   </p>
+                </div>
+              ) : currentEnrollment ? (
+                <>
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-400">
+                        Continuar aprendiendo
+                      </p>
 
-                  <h2 className="mt-2 text-xl font-semibold text-white">
-                    Fundamentos de Redes
+                      <h2 className="mt-2 text-xl font-semibold text-white">
+                        {
+                          currentEnrollment
+                            .course.title
+                        }
+                      </h2>
+
+                      <p className="mt-1 text-sm text-slate-400">
+                        {
+                          currentEnrollment
+                            .course.path.title
+                        }
+                      </p>
+                    </div>
+
+                    <div className="rounded-xl bg-cyan-400/10 p-3 text-cyan-300">
+                      <ShieldIcon />
+                    </div>
+                  </div>
+
+                  <div className="mt-8 grid grid-cols-2 gap-3">
+                    <div className="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+                      <p className="text-xs uppercase tracking-wider text-slate-500">
+                        Estado
+                      </p>
+
+                      <p className="mt-2 text-sm font-medium text-white">
+                        {
+                          enrollmentStatusLabels[
+                            currentEnrollment
+                              .status
+                          ]
+                        }
+                      </p>
+                    </div>
+
+                    <div className="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+                      <p className="text-xs uppercase tracking-wider text-slate-500">
+                        Módulos
+                      </p>
+
+                      <p className="mt-2 text-sm font-medium text-white">
+                        {
+                          currentEnrollment
+                            .course._count
+                            .modules
+                        }
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+                    <p className="text-xs uppercase tracking-wider text-slate-500">
+                      Curso actual
+                    </p>
+
+                    <p className="mt-2 text-sm leading-6 text-slate-400">
+                      {currentEnrollment.course
+                        .description ??
+                        "Continuá avanzando en este curso para completar tu ruta de aprendizaje."}
+                    </p>
+
+                    <button
+                      type="button"
+                      className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-cyan-400 transition hover:text-cyan-300"
+                    >
+                      Abrir curso
+                      <ArrowIcon />
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="flex min-h-64 flex-col items-center justify-center text-center">
+                  <div className="rounded-xl bg-cyan-400/10 p-3 text-cyan-300">
+                    <ShieldIcon />
+                  </div>
+
+                  <h2 className="mt-5 text-lg font-semibold text-white">
+                    {user
+                      ? "Todavía no tenés cursos"
+                      : "Comenzá tu formación"}
                   </h2>
 
-                  <p className="mt-1 text-sm text-slate-400">
-                    Ciberseguridad desde Cero
+                  <p className="mt-2 max-w-sm text-sm leading-6 text-slate-400">
+                    {user
+                      ? "Cuando te inscribas a un curso, podrás continuar tu formación desde acá."
+                      : "Iniciá sesión para acceder a tus cursos y seguir tu progreso."}
                   </p>
                 </div>
-
-                <div className="rounded-xl bg-cyan-400/10 p-3 text-cyan-300">
-                  <ShieldIcon />
-                </div>
-              </div>
-
-              <div className="mt-8">
-                <div className="mb-2 flex items-center justify-between text-sm">
-                  <span className="text-slate-400">
-                    Progreso del curso
-                  </span>
-
-                  <span className="font-semibold text-white">
-                    35%
-                  </span>
-                </div>
-
-                <div className="h-2 overflow-hidden rounded-full bg-slate-800">
-                  <div className="h-full w-[35%] rounded-full bg-cyan-400" />
-                </div>
-              </div>
-
-              <div className="mt-8 rounded-xl border border-slate-800 bg-slate-950/70 p-4">
-                <p className="text-xs uppercase tracking-wider text-slate-500">
-                  Continuar con
-                </p>
-
-                <p className="mt-2 font-medium text-white">
-                  Introducción a las Redes
-                </p>
-
-                <p className="mt-1 text-sm text-slate-400">
-                  Conceptos fundamentales y funcionamiento de una
-                  red informática.
-                </p>
-
-                <button
-                  type="button"
-                  className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-cyan-400 transition hover:text-cyan-300"
-                >
-                  Continuar lección
-                  <ArrowIcon />
-                </button>
-              </div>
+              )}
             </div>
           </div>
         </section>
 
-        <section
-          id="progreso"
-          className="mx-auto max-w-7xl px-5 py-12 lg:px-8"
-        >
-          <div className="grid gap-4 sm:grid-cols-3">
-            {stats.map((stat) => (
-              <div
-                key={stat.label}
-                className="rounded-xl border border-slate-800 bg-slate-900/50 p-5"
-              >
-                <p className="text-sm text-slate-500">
-                  {stat.label}
-                </p>
+        {user && (
+          <section
+            id="progreso"
+            className="mx-auto max-w-7xl px-5 py-12 lg:px-8"
+          >
+            <div className="grid gap-4 sm:grid-cols-3">
+              {stats.map((stat) => (
+                <div
+                  key={stat.label}
+                  className="rounded-xl border border-slate-800 bg-slate-900/50 p-5"
+                >
+                  <p className="text-sm text-slate-500">
+                    {stat.label}
+                  </p>
 
-                <p className="mt-2 text-3xl font-semibold text-white">
-                  {stat.value}
-                </p>
-              </div>
-            ))}
-          </div>
-        </section>
+                  <p className="mt-2 text-3xl font-semibold text-white">
+                    {stat.value}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         <section
           id="cursos"
-          className="mx-auto max-w-7xl px-5 pb-20 lg:px-8"
+          className="mx-auto max-w-7xl px-5 pb-20 pt-12 lg:px-8"
         >
           <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
             <div>
@@ -413,75 +518,138 @@ function HomePage() {
               </p>
 
               <h2 className="mt-2 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-                Tus cursos
+                {user
+                  ? "Tus cursos"
+                  : "Tu formación"}
               </h2>
 
               <p className="mt-2 text-sm text-slate-400">
-                Avanzá a tu ritmo y continuá donde lo dejaste.
+                {user
+                  ? "Cursos asociados a tu cuenta dentro de la plataforma."
+                  : "Iniciá sesión para consultar tus cursos y tu progreso."}
               </p>
             </div>
-
-            <button
-              type="button"
-              className="text-sm font-medium text-slate-300 transition hover:text-white"
-            >
-              Ver todos los cursos
-            </button>
           </div>
 
-          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {courses.map((course) => (
-              <article
-                key={course.title}
-                className="group flex min-h-72 flex-col rounded-2xl border border-slate-800 bg-slate-900/50 p-6 transition hover:-translate-y-1 hover:border-slate-700 hover:bg-slate-900"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="rounded-full bg-slate-800 px-3 py-1 text-xs font-medium text-slate-300">
-                    {course.level}
-                  </span>
+          {enrollmentsError && (
+            <div className="mb-6 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+              {enrollmentsError}
+            </div>
+          )}
 
-                  <span className="text-xs text-slate-500">
-                    {course.modules} módulos
-                  </span>
-                </div>
+          {user && isLoadingEnrollments && (
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-8 text-center text-sm text-slate-500">
+              Cargando tus cursos...
+            </div>
+          )}
 
-                <h3 className="mt-6 text-xl font-semibold text-white">
-                  {course.title}
-                </h3>
-
-                <p className="mt-3 flex-1 text-sm leading-6 text-slate-400">
-                  {course.description}
+          {user &&
+            !isLoadingEnrollments &&
+            enrollments.length === 0 && (
+              <div className="rounded-2xl border border-dashed border-slate-800 bg-slate-900/30 p-10 text-center">
+                <p className="font-medium text-white">
+                  No tenés cursos inscriptos.
                 </p>
 
-                <div className="mt-6">
-                  <div className="mb-2 flex justify-between text-xs text-slate-500">
-                    <span>Progreso</span>
-                    <span>{course.progress}%</span>
-                  </div>
+                <p className="mt-2 text-sm text-slate-500">
+                  Tus próximos cursos aparecerán
+                  en esta sección.
+                </p>
+              </div>
+            )}
 
-                  <div className="h-1.5 overflow-hidden rounded-full bg-slate-800">
-                    <div
-                      className="h-full rounded-full bg-cyan-400 transition-all"
-                      style={{
-                        width: `${course.progress}%`,
-                      }}
-                    />
-                  </div>
-                </div>
+          {user &&
+            !isLoadingEnrollments &&
+            enrollments.length > 0 && (
+              <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                {enrollments.map(
+                  (enrollment) => (
+                    <article
+                      key={enrollment.id}
+                      className="group flex min-h-72 flex-col rounded-2xl border border-slate-800 bg-slate-900/50 p-6 transition hover:-translate-y-1 hover:border-slate-700 hover:bg-slate-900"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="rounded-full bg-slate-800 px-3 py-1 text-xs font-medium text-slate-300">
+                          {
+                            courseLevelLabels[
+                              enrollment.course
+                                .level
+                            ]
+                          }
+                        </span>
 
-                <button
-                  type="button"
-                  className="mt-6 inline-flex items-center gap-2 text-sm font-medium text-cyan-400 transition group-hover:text-cyan-300"
-                >
-                  {course.progress > 0
-                    ? "Continuar curso"
-                    : "Ver curso"}
+                        <span className="text-xs text-slate-500">
+                          {
+                            enrollment.course
+                              ._count.modules
+                          }{" "}
+                          módulos
+                        </span>
+                      </div>
 
-                  <ArrowIcon />
-                </button>
-              </article>
-            ))}
-          </div>
+                      <p className="mt-5 text-xs font-medium text-cyan-400">
+                        {
+                          enrollment.course.path
+                            .title
+                        }
+                      </p>
+
+                      <h3 className="mt-2 text-xl font-semibold text-white">
+                        {
+                          enrollment.course
+                            .title
+                        }
+                      </h3>
+
+                      <p className="mt-3 flex-1 text-sm leading-6 text-slate-400">
+                        {enrollment.course
+                          .description ??
+                          "Curso de formación en ciberseguridad."}
+                      </p>
+
+                      <div className="mt-6 flex items-center justify-between border-t border-slate-800 pt-5">
+                        <span className="text-xs font-medium text-slate-500">
+                          {
+                            enrollmentStatusLabels[
+                              enrollment.status
+                            ]
+                          }
+                        </span>
+
+                        <button
+                          type="button"
+                          className="inline-flex items-center gap-2 text-sm font-medium text-cyan-400 transition group-hover:text-cyan-300"
+                        >
+                          Abrir curso
+                          <ArrowIcon />
+                        </button>
+                      </div>
+                    </article>
+                  ),
+                )}
+              </div>
+            )}
+
+          {!user && (
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-10 text-center">
+              <p className="text-lg font-semibold text-white">
+                Iniciá sesión para continuar.
+              </p>
+
+              <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-400">
+                Tus cursos, inscripciones y
+                progreso se mostrarán acá.
+              </p>
+
+              <Link
+                to="/login"
+                className="mt-6 inline-flex items-center gap-2 rounded-lg bg-cyan-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
+              >
+                Iniciar sesión
+                <ArrowIcon />
+              </Link>
+            </div>
+          )}
         </section>
       </main>
 
@@ -490,7 +658,8 @@ function HomePage() {
           <p>Cyber Platform</p>
 
           <p>
-            Plataforma de aprendizaje en ciberseguridad.
+            Plataforma de aprendizaje en
+            ciberseguridad.
           </p>
         </div>
       </footer>
