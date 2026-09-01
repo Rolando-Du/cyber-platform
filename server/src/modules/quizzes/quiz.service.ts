@@ -46,10 +46,25 @@ export const getQuizById = async (id: string) => {
         orderBy: {
           order: "asc",
         },
-        include: {
+        select: {
+          id: true,
+          quizId: true,
+          type: true,
+          text: true,
+          order: true,
+          createdAt: true,
+          updatedAt: true,
           options: {
             orderBy: {
               order: "asc",
+            },
+            select: {
+              id: true,
+              questionId: true,
+              text: true,
+              order: true,
+              createdAt: true,
+              updatedAt: true,
             },
           },
         },
