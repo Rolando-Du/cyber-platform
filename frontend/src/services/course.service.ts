@@ -19,6 +19,11 @@ export type CourseModule = {
   order: number;
   createdAt: string;
   updatedAt: string;
+
+  _count: {
+    lessons: number;
+    quizzes: number;
+  };
 };
 
 export type CourseDetails = {

@@ -37,6 +37,14 @@ export const getCourseById = async (id: string) => {
         orderBy: {
           order: "asc",
         },
+        include: {
+          _count: {
+            select: {
+              lessons: true,
+              quizzes: true,
+            },
+          },
+        },
       },
       _count: {
         select: {
@@ -100,12 +108,16 @@ export const updateCourse = async (
     throw new Error("COURSE_NOT_FOUND");
   }
 
-  if (input.slug !== undefined && input.slug !== existingCourse.slug) {
-    const courseWithSameSlug = await prisma.course.findUnique({
-      where: {
-        slug: input.slug,
-      },
-    });
+  if (
+    input.slug !== undefined &&
+    input.slug !== existingCourse.slug
+  ) {
+    const courseWithSameSlug =
+      await prisma.course.findUnique({
+        where: {
+          slug: input.slug,
+        },
+      });
 
     if (courseWithSameSlug) {
       throw new Error("COURSE_SLUG_ALREADY_EXISTS");

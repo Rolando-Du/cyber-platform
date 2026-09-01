@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useMemo,
   useState,
 } from "react";
 import {
@@ -7,10 +8,22 @@ import {
   useParams,
 } from "react-router-dom";
 
+import { getAccessToken } from "../lib/auth";
+
 import {
   getCourseById,
   type CourseDetails,
 } from "../services/course.service";
+
+import {
+  getMyLessonProgress,
+  type LessonProgress,
+} from "../services/lesson-progress.service";
+
+import {
+  getMyQuizAttempts,
+  type QuizAttempt,
+} from "../services/quiz-attempt.service";
 
 const courseLevelLabels = {
   BEGINNER: "Principiante",
@@ -70,10 +83,30 @@ function ModuleIcon() {
         strokeWidth="1.8"
         strokeLinejoin="round"
       />
+
       <path
         d="m4 11 8 3.5 8-3.5M4 15.5 12 19l8-3.5"
         stroke="currentColor"
         strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+      className="h-4 w-4"
+    >
+      <path
+        d="m5 12 4 4L19 6"
+        stroke="currentColor"
+        strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
@@ -88,6 +121,12 @@ function CoursePage() {
 
   const [course, setCourse] =
     useState<CourseDetails | null>(null);
+
+  const [lessonProgress, setLessonProgress] =
+    useState<LessonProgress[]>([]);
+
+  const [quizAttempts, setQuizAttempts] =
+    useState<QuizAttempt[]>([]);
 
   const [isLoading, setIsLoading] =
     useState(true);
@@ -117,6 +156,28 @@ function CoursePage() {
         if (isMounted) {
           setCourse(courseData);
         }
+
+        if (getAccessToken()) {
+          try {
+            const [
+              progress,
+              attempts,
+            ] = await Promise.all([
+              getMyLessonProgress(),
+              getMyQuizAttempts(),
+            ]);
+
+            if (isMounted) {
+              setLessonProgress(progress);
+              setQuizAttempts(attempts);
+            }
+          } catch (progressError) {
+            console.error(
+              "Course progress error:",
+              progressError,
+            );
+          }
+        }
       } catch (loadError) {
         if (!isMounted) {
           return;
@@ -140,6 +201,106 @@ function CoursePage() {
       isMounted = false;
     };
   }, [courseId]);
+
+  const latestAttemptByQuizId = useMemo(() => {
+    const attemptsByQuiz = new Map<
+      string,
+      QuizAttempt
+    >();
+
+    for (const attempt of quizAttempts) {
+      if (!attemptsByQuiz.has(attempt.quizId)) {
+        attemptsByQuiz.set(
+          attempt.quizId,
+          attempt,
+        );
+      }
+    }
+
+    return attemptsByQuiz;
+  }, [quizAttempts]);
+
+  const moduleProgress = useMemo(() => {
+    if (!course) {
+      return new Map();
+    }
+
+    const result = new Map<
+      string,
+      {
+        completedLessons: number;
+        approvedQuizzes: number;
+        totalLessons: number;
+        totalQuizzes: number;
+        isCompleted: boolean;
+      }
+    >();
+
+    for (const module of course.modules) {
+      const completedLessons =
+        lessonProgress.filter(
+          (progress) =>
+            progress.lesson.module.id ===
+              module.id &&
+            progress.status === "COMPLETED",
+        ).length;
+
+      const approvedQuizzes = Array.from(
+        latestAttemptByQuizId.values(),
+      ).filter(
+        (attempt) =>
+          attempt.quiz.module.id ===
+            module.id &&
+          attempt.status === "COMPLETED" &&
+          (attempt.score ?? 0) >=
+            attempt.quiz.passingScore,
+      ).length;
+
+      const totalLessons =
+        module._count.lessons;
+
+      const totalQuizzes =
+        module._count.quizzes;
+
+      const lessonsCompleted =
+        totalLessons === 0 ||
+        completedLessons >= totalLessons;
+
+      const quizzesApproved =
+        totalQuizzes === 0 ||
+        approvedQuizzes >= totalQuizzes;
+
+      result.set(module.id, {
+        completedLessons,
+        approvedQuizzes,
+        totalLessons,
+        totalQuizzes,
+        isCompleted:
+          lessonsCompleted &&
+          quizzesApproved &&
+          (totalLessons > 0 ||
+            totalQuizzes > 0),
+      });
+    }
+
+    return result;
+  }, [
+    course,
+    lessonProgress,
+    latestAttemptByQuizId,
+  ]);
+
+  const completedModules = useMemo(() => {
+    if (!course) {
+      return 0;
+    }
+
+    return course.modules.filter(
+      (module) =>
+        moduleProgress.get(module.id)
+          ?.isCompleted,
+    ).length;
+  }, [course, moduleProgress]);
 
   if (isLoading) {
     return (
@@ -224,6 +385,14 @@ function CoursePage() {
 
               <p>
                 <span className="font-semibold text-white">
+                  {completedModules}/
+                  {course.modules.length}
+                </span>{" "}
+                módulos completados
+              </p>
+
+              <p>
+                <span className="font-semibold text-white">
                   {course._count.enrollments}
                 </span>{" "}
                 {course._count.enrollments === 1
@@ -262,40 +431,87 @@ function CoursePage() {
           ) : (
             <div className="space-y-4">
               {course.modules.map(
-                (module, index) => (
-                  <article
-                    key={module.id}
-                    className="group flex items-center gap-5 rounded-2xl border border-slate-800 bg-slate-900/50 p-5 transition hover:border-slate-700 hover:bg-slate-900"
-                  >
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-cyan-500/20 bg-cyan-500/10 text-cyan-300">
-                      <ModuleIcon />
-                    </div>
+                (module, index) => {
+                  const progress =
+                    moduleProgress.get(module.id);
 
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
-                        Módulo {index + 1}
-                      </p>
+                  const isCompleted =
+                    progress?.isCompleted ??
+                    false;
 
-                      <h3 className="mt-1 text-lg font-semibold text-white">
-                        {module.title}
-                      </h3>
-
-                      {module.description && (
-                        <p className="mt-2 text-sm leading-6 text-slate-400">
-                          {module.description}
-                        </p>
-                      )}
-                    </div>
-
-                    <Link
-                      to={`/modules/${module.id}`}
-                      className="inline-flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-cyan-400 transition group-hover:bg-cyan-500/10 group-hover:text-cyan-300"
+                  return (
+                    <article
+                      key={module.id}
+                      className="group flex items-center gap-5 rounded-2xl border border-slate-800 bg-slate-900/50 p-5 transition hover:border-slate-700 hover:bg-slate-900"
                     >
-                      Ver módulo
-                      <ArrowIcon />
-                    </Link>
-                  </article>
-                ),
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-cyan-500/20 bg-cyan-500/10 text-cyan-300">
+                        <ModuleIcon />
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-3">
+                          <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                            Módulo {index + 1}
+                          </p>
+
+                          {isCompleted && (
+                            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-300">
+                              <CheckIcon />
+                              Completado
+                            </span>
+                          )}
+                        </div>
+
+                        <h3 className="mt-1 text-lg font-semibold text-white">
+                          {module.title}
+                        </h3>
+
+                        {module.description && (
+                          <p className="mt-2 text-sm leading-6 text-slate-400">
+                            {module.description}
+                          </p>
+                        )}
+
+                        {progress && (
+                          <div className="mt-3 flex flex-wrap gap-4 text-xs text-slate-500">
+                            <span>
+                              {
+                                progress.completedLessons
+                              }
+                              /
+                              {
+                                progress.totalLessons
+                              }{" "}
+                              lecciones completadas
+                            </span>
+
+                            <span>
+                              {
+                                progress.approvedQuizzes
+                              }
+                              /
+                              {
+                                progress.totalQuizzes
+                              }{" "}
+                              evaluaciones aprobadas
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      <Link
+                        to={`/modules/${module.id}`}
+                        className="inline-flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-cyan-400 transition group-hover:bg-cyan-500/10 group-hover:text-cyan-300"
+                      >
+                        {isCompleted
+                          ? "Revisar módulo"
+                          : "Ver módulo"}
+
+                        <ArrowIcon />
+                      </Link>
+                    </article>
+                  );
+                },
               )}
             </div>
           )}
