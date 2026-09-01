@@ -17,6 +17,7 @@ import { lessonBlockRouter } from "./modules/lesson-blocks/lesson-block.routes.j
 import { lessonProgressRouter } from "./modules/lesson-progress/lesson-progress.routes.js";
 import { lessonRouter } from "./modules/lessons/lesson.routes.js";
 import { moduleRouter } from "./modules/modules/module.routes.js";
+import { quizRouter } from "./modules/quizzes/quiz.routes.js";
 
 const app = express();
 
@@ -61,6 +62,7 @@ app.use("/api/v1/lessons", lessonRouter);
 app.use("/api/v1/lesson-blocks", lessonBlockRouter);
 app.use("/api/v1/enrollments", enrollmentRouter);
 app.use("/api/v1/lesson-progress", lessonProgressRouter);
+app.use("/api/v1/quizzes", quizRouter);
 
 app.get(
   "/api/v1/me",
