@@ -1,5 +1,7 @@
 import { prisma } from "../../config/prisma.js";
 
+import { syncCourseCompletion } from "../enrollments/course-completion.service.js";
+
 import type {
   CreateQuizAttemptInput,
   SubmitQuizAttemptInput,
@@ -210,11 +212,14 @@ export const submitQuizAttempt = async (
     throw new Error("QUIZ_ATTEMPT_ALREADY_COMPLETED");
   }
 
+  const courseId =
+    attempt.quiz.module.courseId;
+
   const enrollment = await prisma.enrollment.findUnique({
     where: {
       userId_courseId: {
         userId,
-        courseId: attempt.quiz.module.courseId,
+        courseId,
       },
     },
     select: {
@@ -241,8 +246,13 @@ export const submitQuizAttempt = async (
     throw new Error("DUPLICATE_QUESTION_ANSWER");
   }
 
-  if (input.answers.length !== attempt.quiz.questions.length) {
-    throw new Error("ALL_QUESTIONS_MUST_BE_ANSWERED");
+  if (
+    input.answers.length !==
+    attempt.quiz.questions.length
+  ) {
+    throw new Error(
+      "ALL_QUESTIONS_MUST_BE_ANSWERED",
+    );
   }
 
   const evaluatedAnswers: Array<{
@@ -254,25 +264,38 @@ export const submitQuizAttempt = async (
   let correctAnswers = 0;
 
   for (const question of attempt.quiz.questions) {
-    const selectedOptionIds = answersByQuestion.get(question.id);
+    const selectedOptionIds =
+      answersByQuestion.get(question.id);
 
     if (!selectedOptionIds) {
-      throw new Error("ALL_QUESTIONS_MUST_BE_ANSWERED");
+      throw new Error(
+        "ALL_QUESTIONS_MUST_BE_ANSWERED",
+      );
     }
 
     const validOptionIds = new Set(
-      question.options.map((option) => option.id),
+      question.options.map(
+        (option) => option.id,
+      ),
     );
 
-    const uniqueSelectedOptionIds = new Set(selectedOptionIds);
+    const uniqueSelectedOptionIds =
+      new Set(selectedOptionIds);
 
-    if (uniqueSelectedOptionIds.size !== selectedOptionIds.length) {
-      throw new Error("DUPLICATE_OPTION_SELECTED");
+    if (
+      uniqueSelectedOptionIds.size !==
+      selectedOptionIds.length
+    ) {
+      throw new Error(
+        "DUPLICATE_OPTION_SELECTED",
+      );
     }
 
     for (const optionId of selectedOptionIds) {
       if (!validOptionIds.has(optionId)) {
-        throw new Error("INVALID_OPTION_FOR_QUESTION");
+        throw new Error(
+          "INVALID_OPTION_FOR_QUESTION",
+        );
       }
     }
 
@@ -281,21 +304,30 @@ export const submitQuizAttempt = async (
       question.type === "TRUE_FALSE"
     ) {
       if (selectedOptionIds.length !== 1) {
-        throw new Error("QUESTION_REQUIRES_SINGLE_OPTION");
+        throw new Error(
+          "QUESTION_REQUIRES_SINGLE_OPTION",
+        );
       }
     }
 
-    const correctOptionIds = question.options
-      .filter((option) => option.isCorrect)
-      .map((option) => option.id)
-      .sort();
+    const correctOptionIds =
+      question.options
+        .filter(
+          (option) => option.isCorrect,
+        )
+        .map((option) => option.id)
+        .sort();
 
-    const selectedIds = [...selectedOptionIds].sort();
+    const selectedIds = [
+      ...selectedOptionIds,
+    ].sort();
 
     const isCorrect =
-      correctOptionIds.length === selectedIds.length &&
+      correctOptionIds.length ===
+        selectedIds.length &&
       correctOptionIds.every(
-        (optionId, index) => optionId === selectedIds[index],
+        (optionId, index) =>
+          optionId === selectedIds[index],
       );
 
     if (isCorrect) {
@@ -304,12 +336,15 @@ export const submitQuizAttempt = async (
 
     evaluatedAnswers.push({
       questionId: question.id,
-      selectedOptionIds: [...selectedOptionIds],
+      selectedOptionIds: [
+        ...selectedOptionIds,
+      ],
       isCorrect,
     });
   }
 
-  const totalQuestions = attempt.quiz.questions.length;
+  const totalQuestions =
+    attempt.quiz.questions.length;
 
   const score = Math.round(
     (correctAnswers / totalQuestions) * 100,
@@ -317,99 +352,113 @@ export const submitQuizAttempt = async (
 
   const completedAt = new Date();
 
-  const completedAttempt = await prisma.$transaction(
-    async (tx) => {
-      const updatedAttempt = await tx.quizAttempt.updateMany({
-        where: {
-          id,
-          userId,
-          status: "IN_PROGRESS",
-        },
-        data: {
-          status: "COMPLETED",
-          score,
-          completedAt,
-        },
-      });
+  const completedAttempt =
+    await prisma.$transaction(
+      async (tx) => {
+        const updatedAttempt =
+          await tx.quizAttempt.updateMany({
+            where: {
+              id,
+              userId,
+              status: "IN_PROGRESS",
+            },
+            data: {
+              status: "COMPLETED",
+              score,
+              completedAt,
+            },
+          });
 
-      if (updatedAttempt.count === 0) {
-        throw new Error("QUIZ_ATTEMPT_ALREADY_COMPLETED");
-      }
+        if (updatedAttempt.count === 0) {
+          throw new Error(
+            "QUIZ_ATTEMPT_ALREADY_COMPLETED",
+          );
+        }
 
-      for (const answer of evaluatedAnswers) {
-        await tx.quizAttemptAnswer.create({
-          data: {
-            attempt: {
-              connect: {
-                id,
+        for (const answer of evaluatedAnswers) {
+          await tx.quizAttemptAnswer.create({
+            data: {
+              attempt: {
+                connect: {
+                  id,
+                },
+              },
+              question: {
+                connect: {
+                  id: answer.questionId,
+                },
+              },
+              isCorrect: answer.isCorrect,
+              selectedOptions: {
+                create:
+                  answer.selectedOptionIds.map(
+                    (optionId) => ({
+                      option: {
+                        connect: {
+                          id: optionId,
+                        },
+                      },
+                    }),
+                  ),
               },
             },
-            question: {
-              connect: {
-                id: answer.questionId,
+          });
+        }
+
+        return tx.quizAttempt.findUniqueOrThrow({
+          where: {
+            id,
+          },
+          include: {
+            quiz: {
+              include: {
+                module: {
+                  include: {
+                    course: true,
+                  },
+                },
               },
             },
-            isCorrect: answer.isCorrect,
-            selectedOptions: {
-              create: answer.selectedOptionIds.map(
-                (optionId) => ({
-                  option: {
-                    connect: {
-                      id: optionId,
+            answers: {
+              orderBy: {
+                createdAt: "asc",
+              },
+              include: {
+                question: {
+                  select: {
+                    id: true,
+                    type: true,
+                    text: true,
+                    explanation: true,
+                    order: true,
+                  },
+                },
+                selectedOptions: {
+                  include: {
+                    option: {
+                      select: {
+                        id: true,
+                        text: true,
+                        order: true,
+                      },
                     },
                   },
-                }),
-              ),
+                },
+              },
             },
           },
         });
-      }
+      },
+    );
 
-      return tx.quizAttempt.findUniqueOrThrow({
-        where: {
-          id,
-        },
-        include: {
-          quiz: {
-            include: {
-              module: {
-                include: {
-                  course: true,
-                },
-              },
-            },
-          },
-          answers: {
-            orderBy: {
-              createdAt: "asc",
-            },
-            include: {
-              question: {
-                select: {
-                  id: true,
-                  type: true,
-                  text: true,
-                  explanation: true,
-                  order: true,
-                },
-              },
-              selectedOptions: {
-                include: {
-                  option: {
-                    select: {
-                      id: true,
-                      text: true,
-                      order: true,
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      });
-    },
-  );
+  if (
+    score >= attempt.quiz.passingScore
+  ) {
+    await syncCourseCompletion(
+      userId,
+      courseId,
+    );
+  }
 
   return {
     attempt: completedAttempt,
@@ -417,8 +466,11 @@ export const submitQuizAttempt = async (
       correctAnswers,
       totalQuestions,
       score,
-      passingScore: attempt.quiz.passingScore,
-      passed: score >= attempt.quiz.passingScore,
+      passingScore:
+        attempt.quiz.passingScore,
+      passed:
+        score >=
+        attempt.quiz.passingScore,
     },
   };
 };

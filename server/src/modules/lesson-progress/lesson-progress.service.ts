@@ -1,5 +1,7 @@
 import { prisma } from "../../config/prisma.js";
 
+import { syncCourseCompletion } from "../enrollments/course-completion.service.js";
+
 import type {
   CreateLessonProgressInput,
   UpdateLessonProgressInput,
@@ -44,10 +46,10 @@ export const getUserLessonProgressById = async (
               course: true,
             },
           },
-          blocks: {
-            orderBy: {
-              order: "asc",
-            },
+        },
+        blocks: {
+          orderBy: {
+            order: "asc",
           },
         },
       },
@@ -98,47 +100,64 @@ export const createLessonProgress = async (
     throw new Error("ENROLLMENT_NOT_ACTIVE");
   }
 
-  const existingProgress = await prisma.lessonProgress.findUnique({
-    where: {
-      userId_lessonId: {
-        userId,
-        lessonId: input.lessonId,
+  const existingProgress =
+    await prisma.lessonProgress.findUnique({
+      where: {
+        userId_lessonId: {
+          userId,
+          lessonId: input.lessonId,
+        },
       },
-    },
-    select: {
-      id: true,
-    },
-  });
+      select: {
+        id: true,
+      },
+    });
 
   if (existingProgress) {
-    throw new Error("LESSON_PROGRESS_ALREADY_EXISTS");
+    throw new Error(
+      "LESSON_PROGRESS_ALREADY_EXISTS",
+    );
   }
 
   const now = new Date();
 
-  return prisma.lessonProgress.create({
-    data: {
-      userId,
-      lessonId: input.lessonId,
-      status: input.status,
-      progress: input.progress,
-      startedAt:
-        input.status === "NOT_STARTED" ? null : now,
-      completedAt:
-        input.status === "COMPLETED" ? now : null,
-    },
-    include: {
-      lesson: {
-        include: {
-          module: {
-            include: {
-              course: true,
+  const progress =
+    await prisma.lessonProgress.create({
+      data: {
+        userId,
+        lessonId: input.lessonId,
+        status: input.status,
+        progress: input.progress,
+        startedAt:
+          input.status === "NOT_STARTED"
+            ? null
+            : now,
+        completedAt:
+          input.status === "COMPLETED"
+            ? now
+            : null,
+      },
+      include: {
+        lesson: {
+          include: {
+            module: {
+              include: {
+                course: true,
+              },
             },
           },
         },
       },
-    },
-  });
+    });
+
+  if (progress.status === "COMPLETED") {
+    await syncCourseCompletion(
+      userId,
+      lesson.module.courseId,
+    );
+  }
+
+  return progress;
 };
 
 export const updateLessonProgress = async (
@@ -146,44 +165,51 @@ export const updateLessonProgress = async (
   userId: string,
   input: UpdateLessonProgressInput,
 ) => {
-  const existingProgress = await prisma.lessonProgress.findFirst({
-    where: {
-      id,
-      userId,
-    },
-    select: {
-      id: true,
-      status: true,
-      progress: true,
-      startedAt: true,
-      completedAt: true,
-      lesson: {
-        select: {
-          module: {
-            select: {
-              courseId: true,
+  const existingProgress =
+    await prisma.lessonProgress.findFirst({
+      where: {
+        id,
+        userId,
+      },
+      select: {
+        id: true,
+        status: true,
+        progress: true,
+        startedAt: true,
+        completedAt: true,
+        lesson: {
+          select: {
+            module: {
+              select: {
+                courseId: true,
+              },
             },
           },
         },
       },
-    },
-  });
+    });
 
   if (!existingProgress) {
-    throw new Error("LESSON_PROGRESS_NOT_FOUND");
+    throw new Error(
+      "LESSON_PROGRESS_NOT_FOUND",
+    );
   }
 
-  const enrollment = await prisma.enrollment.findUnique({
-    where: {
-      userId_courseId: {
-        userId,
-        courseId: existingProgress.lesson.module.courseId,
+  const courseId =
+    existingProgress.lesson.module.courseId;
+
+  const enrollment =
+    await prisma.enrollment.findUnique({
+      where: {
+        userId_courseId: {
+          userId,
+          courseId,
+        },
       },
-    },
-    select: {
-      status: true,
-    },
-  });
+      select: {
+        status: true,
+      },
+    });
 
   if (!enrollment) {
     throw new Error("ENROLLMENT_REQUIRED");
@@ -200,7 +226,8 @@ export const updateLessonProgress = async (
       startedAt:
         input.status === "NOT_STARTED"
           ? null
-          : existingProgress.startedAt ?? new Date(),
+          : existingProgress.startedAt ??
+            new Date(),
 
       completedAt:
         input.status === "COMPLETED"
@@ -213,21 +240,31 @@ export const updateLessonProgress = async (
     }),
   };
 
-  return prisma.lessonProgress.update({
-    where: {
-      id,
-    },
-    data,
-    include: {
-      lesson: {
-        include: {
-          module: {
-            include: {
-              course: true,
+  const progress =
+    await prisma.lessonProgress.update({
+      where: {
+        id,
+      },
+      data,
+      include: {
+        lesson: {
+          include: {
+            module: {
+              include: {
+                course: true,
+              },
             },
           },
         },
       },
-    },
-  });
+    });
+
+  if (progress.status === "COMPLETED") {
+    await syncCourseCompletion(
+      userId,
+      courseId,
+    );
+  }
+
+  return progress;
 };

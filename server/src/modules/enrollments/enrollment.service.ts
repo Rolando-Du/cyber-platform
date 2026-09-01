@@ -1,11 +1,33 @@
 import { prisma } from "../../config/prisma.js";
 
+import { syncCourseCompletion } from "./course-completion.service.js";
+
 import type {
   CreateEnrollmentInput,
   UpdateEnrollmentInput,
 } from "./enrollment.schemas.js";
 
-export const getUserEnrollments = async (userId: string) => {
+export const getUserEnrollments = async (
+  userId: string,
+) => {
+  const activeEnrollments =
+    await prisma.enrollment.findMany({
+      where: {
+        userId,
+        status: "ACTIVE",
+      },
+      select: {
+        courseId: true,
+      },
+    });
+
+  for (const enrollment of activeEnrollments) {
+    await syncCourseCompletion(
+      userId,
+      enrollment.courseId,
+    );
+  }
+
   return prisma.enrollment.findMany({
     where: {
       userId,
@@ -32,6 +54,29 @@ export const getUserEnrollmentById = async (
   id: string,
   userId: string,
 ) => {
+  const enrollment =
+    await prisma.enrollment.findFirst({
+      where: {
+        id,
+        userId,
+      },
+      select: {
+        courseId: true,
+        status: true,
+      },
+    });
+
+  if (!enrollment) {
+    return null;
+  }
+
+  if (enrollment.status === "ACTIVE") {
+    await syncCourseCompletion(
+      userId,
+      enrollment.courseId,
+    );
+  }
+
   return prisma.enrollment.findFirst({
     where: {
       id,
@@ -74,20 +119,23 @@ export const createEnrollment = async (
     throw new Error("COURSE_NOT_AVAILABLE");
   }
 
-  const existingEnrollment = await prisma.enrollment.findUnique({
-    where: {
-      userId_courseId: {
-        userId,
-        courseId: input.courseId,
+  const existingEnrollment =
+    await prisma.enrollment.findUnique({
+      where: {
+        userId_courseId: {
+          userId,
+          courseId: input.courseId,
+        },
       },
-    },
-    select: {
-      id: true,
-    },
-  });
+      select: {
+        id: true,
+      },
+    });
 
   if (existingEnrollment) {
-    throw new Error("ENROLLMENT_ALREADY_EXISTS");
+    throw new Error(
+      "ENROLLMENT_ALREADY_EXISTS",
+    );
   }
 
   return prisma.enrollment.create({
@@ -111,15 +159,16 @@ export const updateEnrollment = async (
   userId: string,
   input: UpdateEnrollmentInput,
 ) => {
-  const existingEnrollment = await prisma.enrollment.findFirst({
-    where: {
-      id,
-      userId,
-    },
-    select: {
-      id: true,
-    },
-  });
+  const existingEnrollment =
+    await prisma.enrollment.findFirst({
+      where: {
+        id,
+        userId,
+      },
+      select: {
+        id: true,
+      },
+    });
 
   if (!existingEnrollment) {
     throw new Error("ENROLLMENT_NOT_FOUND");
@@ -129,7 +178,9 @@ export const updateEnrollment = async (
     ...(input.status !== undefined && {
       status: input.status,
       completedAt:
-        input.status === "COMPLETED" ? new Date() : null,
+        input.status === "COMPLETED"
+          ? new Date()
+          : null,
     }),
   };
 
