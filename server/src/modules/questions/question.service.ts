@@ -5,6 +5,15 @@ import type {
   UpdateQuestionInput,
 } from "./question.schemas.js";
 
+const publicOptionSelect = {
+  id: true,
+  questionId: true,
+  text: true,
+  order: true,
+  createdAt: true,
+  updatedAt: true,
+} as const;
+
 export const getQuestions = async () => {
   return prisma.question.findMany({
     orderBy: [
@@ -15,7 +24,14 @@ export const getQuestions = async () => {
         createdAt: "asc",
       },
     ],
-    include: {
+    select: {
+      id: true,
+      quizId: true,
+      type: true,
+      text: true,
+      order: true,
+      createdAt: true,
+      updatedAt: true,
       quiz: {
         include: {
           module: {
@@ -29,6 +45,7 @@ export const getQuestions = async () => {
         orderBy: {
           order: "asc",
         },
+        select: publicOptionSelect,
       },
     },
   });
@@ -39,7 +56,14 @@ export const getQuestionById = async (id: string) => {
     where: {
       id,
     },
-    include: {
+    select: {
+      id: true,
+      quizId: true,
+      type: true,
+      text: true,
+      order: true,
+      createdAt: true,
+      updatedAt: true,
       quiz: {
         include: {
           module: {
@@ -53,6 +77,7 @@ export const getQuestionById = async (id: string) => {
         orderBy: {
           order: "asc",
         },
+        select: publicOptionSelect,
       },
     },
   });
