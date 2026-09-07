@@ -108,13 +108,25 @@ function LessonContentBlock({
 }: {
   block: LessonBlock;
 }) {
+  const text = getTextContent(block.content);
+
+  if (!text) {
+    return null;
+  }
+
+  if (block.type === "HEADING") {
+    return (
+      <div className="pt-4 first:pt-0">
+        <div className="mb-3 h-1 w-10 rounded-full bg-cyan-400" />
+
+        <h3 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+          {text}
+        </h3>
+      </div>
+    );
+  }
+
   if (block.type === "TEXT") {
-    const text = getTextContent(block.content);
-
-    if (!text) {
-      return null;
-    }
-
     return (
       <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-6 sm:p-8">
         <p className="text-base leading-8 text-slate-300">
