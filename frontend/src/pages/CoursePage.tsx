@@ -1,19 +1,9 @@
-import {
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
-import {
-  Link,
-  useParams,
-} from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useParams } from "react-router-dom";
 
 import { getAccessToken } from "../lib/auth";
 
-import {
-  getCourseById,
-  type CourseDetails,
-} from "../services/course.service";
+import { getCourseById, type CourseDetails } from "../services/course.service";
 
 import {
   getMyLessonProgress,
@@ -33,12 +23,7 @@ const courseLevelLabels = {
 
 function ArrowLeftIcon() {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden="true"
-      className="h-4 w-4"
-    >
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className="h-4 w-4">
       <path
         d="M19 12H5M11 18l-6-6 6-6"
         stroke="currentColor"
@@ -52,12 +37,7 @@ function ArrowLeftIcon() {
 
 function ArrowIcon() {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden="true"
-      className="h-4 w-4"
-    >
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className="h-4 w-4">
       <path
         d="M5 12h14M13 6l6 6-6 6"
         stroke="currentColor"
@@ -71,12 +51,7 @@ function ArrowIcon() {
 
 function ModuleIcon() {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden="true"
-      className="h-5 w-5"
-    >
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className="h-5 w-5">
       <path
         d="M4 6.5 12 3l8 3.5-8 3.5-8-3.5Z"
         stroke="currentColor"
@@ -97,12 +72,7 @@ function ModuleIcon() {
 
 function CheckIcon() {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden="true"
-      className="h-4 w-4"
-    >
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className="h-4 w-4">
       <path
         d="m5 12 4 4L19 6"
         stroke="currentColor"
@@ -119,29 +89,22 @@ function CoursePage() {
     courseId: string;
   }>();
 
-  const [course, setCourse] =
-    useState<CourseDetails | null>(null);
+  const [course, setCourse] = useState<CourseDetails | null>(null);
 
-  const [lessonProgress, setLessonProgress] =
-    useState<LessonProgress[]>([]);
+  const [lessonProgress, setLessonProgress] = useState<LessonProgress[]>([]);
 
-  const [quizAttempts, setQuizAttempts] =
-    useState<QuizAttempt[]>([]);
+  const [quizAttempts, setQuizAttempts] = useState<QuizAttempt[]>([]);
 
-  const [isLoading, setIsLoading] =
-    useState(true);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const [error, setError] =
-    useState("");
+  const [error, setError] = useState("");
 
   useEffect(() => {
     let isMounted = true;
 
     const loadCourse = async () => {
       if (!courseId) {
-        setError(
-          "No se indicó el curso que querés abrir.",
-        );
+        setError("No se indicó el curso que querés abrir.");
         setIsLoading(false);
         return;
       }
@@ -150,8 +113,7 @@ function CoursePage() {
         setIsLoading(true);
         setError("");
 
-        const courseData =
-          await getCourseById(courseId);
+        const courseData = await getCourseById(courseId);
 
         if (isMounted) {
           setCourse(courseData);
@@ -159,10 +121,7 @@ function CoursePage() {
 
         if (getAccessToken()) {
           try {
-            const [
-              progress,
-              attempts,
-            ] = await Promise.all([
+            const [progress, attempts] = await Promise.all([
               getMyLessonProgress(),
               getMyQuizAttempts(),
             ]);
@@ -172,10 +131,7 @@ function CoursePage() {
               setQuizAttempts(attempts);
             }
           } catch (progressError) {
-            console.error(
-              "Course progress error:",
-              progressError,
-            );
+            console.error("Course progress error:", progressError);
           }
         }
       } catch (loadError) {
@@ -203,17 +159,11 @@ function CoursePage() {
   }, [courseId]);
 
   const latestAttemptByQuizId = useMemo(() => {
-    const attemptsByQuiz = new Map<
-      string,
-      QuizAttempt
-    >();
+    const attemptsByQuiz = new Map<string, QuizAttempt>();
 
     for (const attempt of quizAttempts) {
       if (!attemptsByQuiz.has(attempt.quizId)) {
-        attemptsByQuiz.set(
-          attempt.quizId,
-          attempt,
-        );
+        attemptsByQuiz.set(attempt.quizId, attempt);
       }
     }
 
@@ -237,38 +187,28 @@ function CoursePage() {
     >();
 
     for (const module of course.modules) {
-      const completedLessons =
-        lessonProgress.filter(
-          (progress) =>
-            progress.lesson.module.id ===
-              module.id &&
-            progress.status === "COMPLETED",
-        ).length;
-
-      const approvedQuizzes = Array.from(
-        latestAttemptByQuizId.values(),
-      ).filter(
-        (attempt) =>
-          attempt.quiz.module.id ===
-            module.id &&
-          attempt.status === "COMPLETED" &&
-          (attempt.score ?? 0) >=
-            attempt.quiz.passingScore,
+      const completedLessons = lessonProgress.filter(
+        (progress) =>
+          progress.lesson.module.id === module.id &&
+          progress.status === "COMPLETED",
       ).length;
 
-      const totalLessons =
-        module._count.lessons;
+      const approvedQuizzes = Array.from(latestAttemptByQuizId.values()).filter(
+        (attempt) =>
+          attempt.quiz.module.id === module.id &&
+          attempt.status === "COMPLETED" &&
+          (attempt.score ?? 0) >= attempt.quiz.passingScore,
+      ).length;
 
-      const totalQuizzes =
-        module._count.quizzes;
+      const totalLessons = module._count.lessons;
+
+      const totalQuizzes = module._count.quizzes;
 
       const lessonsCompleted =
-        totalLessons === 0 ||
-        completedLessons >= totalLessons;
+        totalLessons === 0 || completedLessons >= totalLessons;
 
       const quizzesApproved =
-        totalQuizzes === 0 ||
-        approvedQuizzes >= totalQuizzes;
+        totalQuizzes === 0 || approvedQuizzes >= totalQuizzes;
 
       result.set(module.id, {
         completedLessons,
@@ -278,17 +218,12 @@ function CoursePage() {
         isCompleted:
           lessonsCompleted &&
           quizzesApproved &&
-          (totalLessons > 0 ||
-            totalQuizzes > 0),
+          (totalLessons > 0 || totalQuizzes > 0),
       });
     }
 
     return result;
-  }, [
-    course,
-    lessonProgress,
-    latestAttemptByQuizId,
-  ]);
+  }, [course, lessonProgress, latestAttemptByQuizId]);
 
   const completedModules = useMemo(() => {
     if (!course) {
@@ -296,18 +231,14 @@ function CoursePage() {
     }
 
     return course.modules.filter(
-      (module) =>
-        moduleProgress.get(module.id)
-          ?.isCompleted,
+      (module) => moduleProgress.get(module.id)?.isCompleted,
     ).length;
   }, [course, moduleProgress]);
 
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-950 px-6 text-slate-100">
-        <p className="text-sm text-slate-500">
-          Cargando curso...
-        </p>
+        <p className="text-sm text-slate-500">Cargando curso...</p>
       </div>
     );
   }
@@ -321,16 +252,15 @@ function CoursePage() {
           </p>
 
           <p className="mt-3 text-sm leading-6 text-slate-400">
-            {error ||
-              "El curso solicitado no está disponible."}
+            {error || "El curso solicitado no está disponible."}
           </p>
 
           <Link
             to="/"
-            className="mt-6 inline-flex items-center gap-2 rounded-lg bg-cyan-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
+            className="inline-flex items-center gap-2 text-sm font-medium text-slate-400 transition hover:text-white"
           >
             <ArrowLeftIcon />
-            Volver al inicio
+            Inicio
           </Link>
         </div>
       </div>
@@ -369,8 +299,7 @@ function CoursePage() {
             </h1>
 
             <p className="mt-5 max-w-3xl text-base leading-7 text-slate-400">
-              {course.description ??
-                "Curso de formación en ciberseguridad."}
+              {course.description ?? "Curso de formación en ciberseguridad."}
             </p>
 
             <div className="mt-8 flex flex-wrap gap-6 text-sm text-slate-500">
@@ -378,15 +307,12 @@ function CoursePage() {
                 <span className="font-semibold text-white">
                   {course.modules.length}
                 </span>{" "}
-                {course.modules.length === 1
-                  ? "módulo"
-                  : "módulos"}
+                {course.modules.length === 1 ? "módulo" : "módulos"}
               </p>
 
               <p>
                 <span className="font-semibold text-white">
-                  {completedModules}/
-                  {course.modules.length}
+                  {completedModules}/{course.modules.length}
                 </span>{" "}
                 módulos completados
               </p>
@@ -405,9 +331,7 @@ function CoursePage() {
 
         <section className="mx-auto max-w-6xl px-5 py-12 lg:px-8">
           <div className="mb-8">
-            <p className="text-sm font-medium text-cyan-400">
-              Contenido
-            </p>
+            <p className="text-sm font-medium text-cyan-400">Contenido</p>
 
             <h2 className="mt-2 text-2xl font-semibold tracking-tight text-white">
               Módulos del curso
@@ -430,89 +354,70 @@ function CoursePage() {
             </div>
           ) : (
             <div className="space-y-4">
-              {course.modules.map(
-                (module, index) => {
-                  const progress =
-                    moduleProgress.get(module.id);
+              {course.modules.map((module, index) => {
+                const progress = moduleProgress.get(module.id);
 
-                  const isCompleted =
-                    progress?.isCompleted ??
-                    false;
+                const isCompleted = progress?.isCompleted ?? false;
 
-                  return (
-                    <article
-                      key={module.id}
-                      className="group flex items-center gap-5 rounded-2xl border border-slate-800 bg-slate-900/50 p-5 transition hover:border-slate-700 hover:bg-slate-900"
-                    >
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-cyan-500/20 bg-cyan-500/10 text-cyan-300">
-                        <ModuleIcon />
+                return (
+                  <article
+                    key={module.id}
+                    className="group flex items-center gap-5 rounded-2xl border border-slate-800 bg-slate-900/50 p-5 transition hover:border-slate-700 hover:bg-slate-900"
+                  >
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-cyan-500/20 bg-cyan-500/10 text-cyan-300">
+                      <ModuleIcon />
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                          Módulo {index + 1}
+                        </p>
+
+                        {isCompleted && (
+                          <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-300">
+                            <CheckIcon />
+                            Completado
+                          </span>
+                        )}
                       </div>
 
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-3">
-                          <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
-                            Módulo {index + 1}
-                          </p>
+                      <h3 className="mt-1 text-lg font-semibold text-white">
+                        {module.title}
+                      </h3>
 
-                          {isCompleted && (
-                            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-300">
-                              <CheckIcon />
-                              Completado
-                            </span>
-                          )}
+                      {module.description && (
+                        <p className="mt-2 text-sm leading-6 text-slate-400">
+                          {module.description}
+                        </p>
+                      )}
+
+                      {progress && (
+                        <div className="mt-3 flex flex-wrap gap-4 text-xs text-slate-500">
+                          <span>
+                            {progress.completedLessons}/{progress.totalLessons}{" "}
+                            lecciones completadas
+                          </span>
+
+                          <span>
+                            {progress.approvedQuizzes}/{progress.totalQuizzes}{" "}
+                            evaluaciones aprobadas
+                          </span>
                         </div>
+                      )}
+                    </div>
 
-                        <h3 className="mt-1 text-lg font-semibold text-white">
-                          {module.title}
-                        </h3>
+                    <Link
+                      to={`/modules/${module.id}`}
+                      className="inline-flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-cyan-400 transition group-hover:bg-cyan-500/10 group-hover:text-cyan-300"
+                    >
+                      {isCompleted ? "Revisar módulo" : "Ver módulo"}
 
-                        {module.description && (
-                          <p className="mt-2 text-sm leading-6 text-slate-400">
-                            {module.description}
-                          </p>
-                        )}
-
-                        {progress && (
-                          <div className="mt-3 flex flex-wrap gap-4 text-xs text-slate-500">
-                            <span>
-                              {
-                                progress.completedLessons
-                              }
-                              /
-                              {
-                                progress.totalLessons
-                              }{" "}
-                              lecciones completadas
-                            </span>
-
-                            <span>
-                              {
-                                progress.approvedQuizzes
-                              }
-                              /
-                              {
-                                progress.totalQuizzes
-                              }{" "}
-                              evaluaciones aprobadas
-                            </span>
-                          </div>
-                        )}
-                      </div>
-
-                      <Link
-                        to={`/modules/${module.id}`}
-                        className="inline-flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-cyan-400 transition group-hover:bg-cyan-500/10 group-hover:text-cyan-300"
-                      >
-                        {isCompleted
-                          ? "Revisar módulo"
-                          : "Ver módulo"}
-
-                        <ArrowIcon />
-                      </Link>
-                    </article>
-                  );
-                },
-              )}
+                      <ArrowIcon />
+                    </Link>
+                  </article>
+                );
+              })}
             </div>
           )}
         </section>

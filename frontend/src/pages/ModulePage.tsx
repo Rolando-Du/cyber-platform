@@ -1,12 +1,5 @@
-import {
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
-import {
-  Link,
-  useParams,
-} from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useParams } from "react-router-dom";
 
 import { getAccessToken } from "../lib/auth";
 
@@ -15,10 +8,7 @@ import {
   type LessonProgress,
 } from "../services/lesson-progress.service";
 
-import {
-  getModuleById,
-  type ModuleDetails,
-} from "../services/module.service";
+import { getModuleById, type ModuleDetails } from "../services/module.service";
 
 import {
   getMyQuizAttempts,
@@ -27,12 +17,7 @@ import {
 
 function ArrowLeftIcon() {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden="true"
-      className="h-4 w-4"
-    >
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className="h-4 w-4">
       <path
         d="M19 12H5M11 18l-6-6 6-6"
         stroke="currentColor"
@@ -46,12 +31,7 @@ function ArrowLeftIcon() {
 
 function ArrowIcon() {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden="true"
-      className="h-4 w-4"
-    >
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className="h-4 w-4">
       <path
         d="M5 12h14M13 6l6 6-6 6"
         stroke="currentColor"
@@ -65,12 +45,7 @@ function ArrowIcon() {
 
 function LessonIcon() {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden="true"
-      className="h-5 w-5"
-    >
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className="h-5 w-5">
       <path
         d="M6 4h9a3 3 0 0 1 3 3v13H8a2 2 0 0 1-2-2V4Z"
         stroke="currentColor"
@@ -90,12 +65,7 @@ function LessonIcon() {
 
 function QuizIcon() {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden="true"
-      className="h-5 w-5"
-    >
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className="h-5 w-5">
       <path
         d="M8 4h8M9 3v3M15 3v3"
         stroke="currentColor"
@@ -126,12 +96,7 @@ function QuizIcon() {
 
 function CheckIcon() {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden="true"
-      className="h-4 w-4"
-    >
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className="h-4 w-4">
       <path
         d="m5 12 4 4L19 6"
         stroke="currentColor"
@@ -148,29 +113,22 @@ function ModulePage() {
     moduleId: string;
   }>();
 
-  const [module, setModule] =
-    useState<ModuleDetails | null>(null);
+  const [module, setModule] = useState<ModuleDetails | null>(null);
 
-  const [lessonProgress, setLessonProgress] =
-    useState<LessonProgress[]>([]);
+  const [lessonProgress, setLessonProgress] = useState<LessonProgress[]>([]);
 
-  const [quizAttempts, setQuizAttempts] =
-    useState<QuizAttempt[]>([]);
+  const [quizAttempts, setQuizAttempts] = useState<QuizAttempt[]>([]);
 
-  const [isLoading, setIsLoading] =
-    useState(true);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const [error, setError] =
-    useState("");
+  const [error, setError] = useState("");
 
   useEffect(() => {
     let isMounted = true;
 
     const loadModule = async () => {
       if (!moduleId) {
-        setError(
-          "No se indicó el módulo que querés abrir.",
-        );
+        setError("No se indicó el módulo que querés abrir.");
         setIsLoading(false);
         return;
       }
@@ -179,8 +137,7 @@ function ModulePage() {
         setIsLoading(true);
         setError("");
 
-        const moduleData =
-          await getModuleById(moduleId);
+        const moduleData = await getModuleById(moduleId);
 
         if (isMounted) {
           setModule(moduleData);
@@ -188,10 +145,7 @@ function ModulePage() {
 
         if (getAccessToken()) {
           try {
-            const [
-              progress,
-              attempts,
-            ] = await Promise.all([
+            const [progress, attempts] = await Promise.all([
               getMyLessonProgress(),
               getMyQuizAttempts(),
             ]);
@@ -201,10 +155,7 @@ function ModulePage() {
               setQuizAttempts(attempts);
             }
           } catch (progressError) {
-            console.error(
-              "Module progress error:",
-              progressError,
-            );
+            console.error("Module progress error:", progressError);
           }
         }
       } catch (loadError) {
@@ -233,29 +184,16 @@ function ModulePage() {
 
   const progressByLessonId = useMemo(() => {
     return new Map(
-      lessonProgress.map((progress) => [
-        progress.lessonId,
-        progress,
-      ]),
+      lessonProgress.map((progress) => [progress.lessonId, progress]),
     );
   }, [lessonProgress]);
 
   const latestAttemptByQuizId = useMemo(() => {
-    const attemptsByQuiz = new Map<
-      string,
-      QuizAttempt
-    >();
+    const attemptsByQuiz = new Map<string, QuizAttempt>();
 
     for (const attempt of quizAttempts) {
-      if (
-        !attemptsByQuiz.has(
-          attempt.quizId,
-        )
-      ) {
-        attemptsByQuiz.set(
-          attempt.quizId,
-          attempt,
-        );
+      if (!attemptsByQuiz.has(attempt.quizId)) {
+        attemptsByQuiz.set(attempt.quizId, attempt);
       }
     }
 
@@ -264,29 +202,23 @@ function ModulePage() {
 
   const completedLessons =
     module?.lessons.filter(
-      (lesson) =>
-        progressByLessonId.get(lesson.id)
-          ?.status === "COMPLETED",
+      (lesson) => progressByLessonId.get(lesson.id)?.status === "COMPLETED",
     ).length ?? 0;
 
   const approvedQuizzes =
     module?.quizzes.filter((quiz) => {
-      const attempt =
-        latestAttemptByQuizId.get(quiz.id);
+      const attempt = latestAttemptByQuizId.get(quiz.id);
 
       return (
         attempt?.status === "COMPLETED" &&
-        (attempt.score ?? 0) >=
-          quiz.passingScore
+        (attempt.score ?? 0) >= quiz.passingScore
       );
     }).length ?? 0;
 
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-950 px-6 text-slate-100">
-        <p className="text-sm text-slate-500">
-          Cargando módulo...
-        </p>
+        <p className="text-sm text-slate-500">Cargando módulo...</p>
       </div>
     );
   }
@@ -300,8 +232,7 @@ function ModulePage() {
           </p>
 
           <p className="mt-3 text-sm leading-6 text-slate-400">
-            {error ||
-              "El módulo solicitado no está disponible."}
+            {error || "El módulo solicitado no está disponible."}
           </p>
 
           <Link
@@ -319,7 +250,16 @@ function ModulePage() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
       <header className="border-b border-slate-800 bg-slate-950/95">
-        <div className="mx-auto flex h-20 max-w-6xl items-center px-5 lg:px-8">
+        <div className="mx-auto flex h-20 max-w-6xl items-center gap-4 px-5 lg:px-8">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 text-sm font-medium text-slate-400 transition hover:text-white"
+          >
+            Inicio
+          </Link>
+
+          <span className="text-slate-700">/</span>
+
           <Link
             to={`/courses/${module.course.id}`}
             className="inline-flex items-center gap-2 text-sm font-medium text-slate-400 transition hover:text-white"
@@ -342,8 +282,7 @@ function ModulePage() {
             </h1>
 
             <p className="mt-5 max-w-3xl text-base leading-7 text-slate-400">
-              {module.description ??
-                "Módulo de formación en ciberseguridad."}
+              {module.description ?? "Módulo de formación en ciberseguridad."}
             </p>
 
             <div className="mt-8 flex flex-wrap gap-6 text-sm text-slate-500">
@@ -351,25 +290,20 @@ function ModulePage() {
                 <span className="font-semibold text-white">
                   {module.lessons.length}
                 </span>{" "}
-                {module.lessons.length === 1
-                  ? "lección"
-                  : "lecciones"}
+                {module.lessons.length === 1 ? "lección" : "lecciones"}
               </p>
 
               <p>
                 <span className="font-semibold text-white">
                   {module.quizzes.length}
                 </span>{" "}
-                {module.quizzes.length === 1
-                  ? "evaluación"
-                  : "evaluaciones"}
+                {module.quizzes.length === 1 ? "evaluación" : "evaluaciones"}
               </p>
 
               {module.lessons.length > 0 && (
                 <p>
                   <span className="font-semibold text-white">
-                    {completedLessons}/
-                    {module.lessons.length}
+                    {completedLessons}/{module.lessons.length}
                   </span>{" "}
                   lecciones completadas
                 </p>
@@ -378,8 +312,7 @@ function ModulePage() {
               {module.quizzes.length > 0 && (
                 <p>
                   <span className="font-semibold text-white">
-                    {approvedQuizzes}/
-                    {module.quizzes.length}
+                    {approvedQuizzes}/{module.quizzes.length}
                   </span>{" "}
                   evaluaciones aprobadas
                 </p>
@@ -390,9 +323,7 @@ function ModulePage() {
 
         <section className="mx-auto max-w-6xl px-5 py-12 lg:px-8">
           <div>
-            <p className="text-sm font-medium text-cyan-400">
-              Aprendizaje
-            </p>
+            <p className="text-sm font-medium text-cyan-400">Aprendizaje</p>
 
             <h2 className="mt-2 text-2xl font-semibold tracking-tight text-white">
               Lecciones
@@ -411,82 +342,69 @@ function ModulePage() {
             </div>
           ) : (
             <div className="mt-8 space-y-4">
-              {module.lessons.map(
-                (lesson, index) => {
-                  const progress =
-                    progressByLessonId.get(
-                      lesson.id,
-                    );
+              {module.lessons.map((lesson, index) => {
+                const progress = progressByLessonId.get(lesson.id);
 
-                  const isCompleted =
-                    progress?.status ===
-                    "COMPLETED";
+                const isCompleted = progress?.status === "COMPLETED";
 
-                  return (
-                    <article
-                      key={lesson.id}
-                      className="group flex items-center gap-5 rounded-2xl border border-slate-800 bg-slate-900/50 p-5 transition hover:border-slate-700 hover:bg-slate-900"
-                    >
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-cyan-500/20 bg-cyan-500/10 text-cyan-300">
-                        <LessonIcon />
-                      </div>
+                return (
+                  <article
+                    key={lesson.id}
+                    className="group flex items-center gap-5 rounded-2xl border border-slate-800 bg-slate-900/50 p-5 transition hover:border-slate-700 hover:bg-slate-900"
+                  >
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-cyan-500/20 bg-cyan-500/10 text-cyan-300">
+                      <LessonIcon />
+                    </div>
 
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-3">
-                          <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
-                            Lección {index + 1}
-                          </p>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                          Lección {index + 1}
+                        </p>
 
-                          {isCompleted && (
-                            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-300">
-                              <CheckIcon />
-                              Completada
-                            </span>
-                          )}
-                        </div>
-
-                        <h3 className="mt-1 text-lg font-semibold text-white">
-                          {lesson.title}
-                        </h3>
-
-                        {lesson.description && (
-                          <p className="mt-2 text-sm leading-6 text-slate-400">
-                            {lesson.description}
-                          </p>
+                        {isCompleted && (
+                          <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-300">
+                            <CheckIcon />
+                            Completada
+                          </span>
                         )}
-
-                        {progress &&
-                          !isCompleted && (
-                            <p className="mt-3 text-xs text-slate-500">
-                              {progress.progress}%
-                              completado
-                            </p>
-                          )}
                       </div>
 
-                      <Link
-                        to={`/lessons/${lesson.id}`}
-                        className="inline-flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-cyan-400 transition group-hover:bg-cyan-500/10 group-hover:text-cyan-300"
-                      >
-                        {isCompleted
-                          ? "Revisar lección"
-                          : "Abrir lección"}
+                      <h3 className="mt-1 text-lg font-semibold text-white">
+                        {lesson.title}
+                      </h3>
 
-                        <ArrowIcon />
-                      </Link>
-                    </article>
-                  );
-                },
-              )}
+                      {lesson.description && (
+                        <p className="mt-2 text-sm leading-6 text-slate-400">
+                          {lesson.description}
+                        </p>
+                      )}
+
+                      {progress && !isCompleted && (
+                        <p className="mt-3 text-xs text-slate-500">
+                          {progress.progress}% completado
+                        </p>
+                      )}
+                    </div>
+
+                    <Link
+                      to={`/lessons/${lesson.id}`}
+                      className="inline-flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-cyan-400 transition group-hover:bg-cyan-500/10 group-hover:text-cyan-300"
+                    >
+                      {isCompleted ? "Revisar lección" : "Abrir lección"}
+
+                      <ArrowIcon />
+                    </Link>
+                  </article>
+                );
+              })}
             </div>
           )}
 
           {module.quizzes.length > 0 && (
             <div className="mt-14">
               <div>
-                <p className="text-sm font-medium text-cyan-400">
-                  Evaluación
-                </p>
+                <p className="text-sm font-medium text-cyan-400">Evaluación</p>
 
                 <h2 className="mt-2 text-2xl font-semibold tracking-tight text-white">
                   Cuestionarios
@@ -494,102 +412,85 @@ function ModulePage() {
               </div>
 
               <div className="mt-8 space-y-4">
-                {module.quizzes.map(
-                  (quiz) => {
-                    const attempt =
-                      latestAttemptByQuizId.get(
-                        quiz.id,
-                      );
+                {module.quizzes.map((quiz) => {
+                  const attempt = latestAttemptByQuizId.get(quiz.id);
 
-                    const isCompleted =
-                      attempt?.status ===
-                      "COMPLETED";
+                  const isCompleted = attempt?.status === "COMPLETED";
 
-                    const isInProgress =
-                      attempt?.status ===
-                      "IN_PROGRESS";
+                  const isInProgress = attempt?.status === "IN_PROGRESS";
 
-                    const score =
-                      attempt?.score ?? 0;
+                  const score = attempt?.score ?? 0;
 
-                    const isApproved =
-                      isCompleted &&
-                      score >=
-                        quiz.passingScore;
+                  const isApproved = isCompleted && score >= quiz.passingScore;
 
-                    return (
-                      <article
-                        key={quiz.id}
-                        className="group flex items-center gap-5 rounded-2xl border border-slate-800 bg-slate-900/50 p-5 transition hover:border-slate-700 hover:bg-slate-900"
-                      >
-                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-violet-500/20 bg-violet-500/10 text-violet-300">
-                          <QuizIcon />
+                  return (
+                    <article
+                      key={quiz.id}
+                      className="group flex items-center gap-5 rounded-2xl border border-slate-800 bg-slate-900/50 p-5 transition hover:border-slate-700 hover:bg-slate-900"
+                    >
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-violet-500/20 bg-violet-500/10 text-violet-300">
+                        <QuizIcon />
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-3">
+                          <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                            Evaluación
+                          </p>
+
+                          {isApproved && (
+                            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-300">
+                              <CheckIcon />
+                              Aprobada
+                            </span>
+                          )}
+
+                          {isCompleted && !isApproved && (
+                            <span className="rounded-full border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-300">
+                              No aprobada
+                            </span>
+                          )}
+
+                          {isInProgress && (
+                            <span className="rounded-full border border-violet-500/20 bg-violet-500/10 px-2 py-0.5 text-xs font-medium text-violet-300">
+                              En curso
+                            </span>
+                          )}
                         </div>
 
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-3">
-                            <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
-                              Evaluación
-                            </p>
+                        <h3 className="mt-1 text-lg font-semibold text-white">
+                          {quiz.title}
+                        </h3>
 
-                            {isApproved && (
-                              <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-300">
-                                <CheckIcon />
-                                Aprobada
-                              </span>
-                            )}
+                        <div className="mt-2 flex flex-wrap gap-4 text-sm text-slate-400">
+                          <p>Puntaje mínimo: {quiz.passingScore}%</p>
 
-                            {isCompleted &&
-                              !isApproved && (
-                                <span className="rounded-full border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-300">
-                                  No aprobada
-                                </span>
-                              )}
-
-                            {isInProgress && (
-                              <span className="rounded-full border border-violet-500/20 bg-violet-500/10 px-2 py-0.5 text-xs font-medium text-violet-300">
-                                En curso
-                              </span>
-                            )}
-                          </div>
-
-                          <h3 className="mt-1 text-lg font-semibold text-white">
-                            {quiz.title}
-                          </h3>
-
-                          <div className="mt-2 flex flex-wrap gap-4 text-sm text-slate-400">
+                          {isCompleted && (
                             <p>
-                              Puntaje mínimo:{" "}
-                              {quiz.passingScore}%
+                              Puntaje obtenido:{" "}
+                              <span className="font-medium text-white">
+                                {score}%
+                              </span>
                             </p>
-
-                            {isCompleted && (
-                              <p>
-                                Puntaje obtenido:{" "}
-                                <span className="font-medium text-white">
-                                  {score}%
-                                </span>
-                              </p>
-                            )}
-                          </div>
+                          )}
                         </div>
+                      </div>
 
-                        <Link
-                          to={`/quizzes/${quiz.id}`}
-                          className="inline-flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-violet-300 transition group-hover:bg-violet-500/10"
-                        >
-                          {isCompleted
-                            ? "Revisar resultado"
-                            : isInProgress
-                              ? "Continuar evaluación"
-                              : "Ver evaluación"}
+                      <Link
+                        to={`/quizzes/${quiz.id}`}
+                        className="inline-flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-violet-300 transition group-hover:bg-violet-500/10"
+                      >
+                        {isCompleted
+                          ? "Revisar resultado"
+                          : isInProgress
+                            ? "Continuar evaluación"
+                            : "Ver evaluación"}
 
-                          <ArrowIcon />
-                        </Link>
-                      </article>
-                    );
-                  },
-                )}
+                        <ArrowIcon />
+                      </Link>
+                    </article>
+                  );
+                })}
               </div>
             </div>
           )}

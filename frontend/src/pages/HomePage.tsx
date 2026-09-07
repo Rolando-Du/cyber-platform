@@ -275,12 +275,6 @@ function HomePage() {
           </div>
 
           <nav className="hidden items-center gap-8 text-sm text-slate-400 lg:flex">
-            <a
-              href="#inicio"
-              className="font-medium text-white transition hover:text-cyan-300"
-            >
-              Inicio
-            </a>
 
             <a
               href="#rutas"

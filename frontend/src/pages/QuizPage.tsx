@@ -1,12 +1,5 @@
-import {
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
-import {
-  Link,
-  useParams,
-} from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useParams } from "react-router-dom";
 
 import { getAccessToken } from "../lib/auth";
 
@@ -28,12 +21,7 @@ import {
 
 function ArrowLeftIcon() {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden="true"
-      className="h-4 w-4"
-    >
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className="h-4 w-4">
       <path
         d="M19 12H5M11 18l-6-6 6-6"
         stroke="currentColor"
@@ -47,12 +35,7 @@ function ArrowLeftIcon() {
 
 function CheckIcon() {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden="true"
-      className="h-4 w-4"
-    >
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className="h-4 w-4">
       <path
         d="m5 12 4 4L19 6"
         stroke="currentColor"
@@ -66,12 +49,7 @@ function CheckIcon() {
 
 function QuizIcon() {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden="true"
-      className="h-5 w-5"
-    >
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className="h-5 w-5">
       <rect
         x="5"
         y="4"
@@ -103,56 +81,39 @@ function QuizPage() {
     quizId: string;
   }>();
 
-  const [quiz, setQuiz] =
-    useState<QuizDetails | null>(null);
+  const [quiz, setQuiz] = useState<QuizDetails | null>(null);
 
-  const [attempt, setAttempt] =
-    useState<QuizAttempt | null>(null);
+  const [attempt, setAttempt] = useState<QuizAttempt | null>(null);
 
-  const [answers, setAnswers] =
-    useState<Record<string, string[]>>({});
+  const [answers, setAnswers] = useState<Record<string, string[]>>({});
 
-  const [result, setResult] =
-    useState<QuizAttemptResult | null>(null);
+  const [result, setResult] = useState<QuizAttemptResult | null>(null);
 
-  const [
-    submittedAttempt,
-    setSubmittedAttempt,
-  ] = useState<SubmittedQuizAttempt | null>(
-    null,
-  );
+  const [submittedAttempt, setSubmittedAttempt] =
+    useState<SubmittedQuizAttempt | null>(null);
 
-  const [isLoading, setIsLoading] =
-    useState(true);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const [isStarting, setIsStarting] =
-    useState(false);
+  const [isStarting, setIsStarting] = useState(false);
 
-  const [isSubmitting, setIsSubmitting] =
-    useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [error, setError] =
-    useState("");
+  const [error, setError] = useState("");
 
-  const [formError, setFormError] =
-    useState("");
+  const [formError, setFormError] = useState("");
 
   useEffect(() => {
     let isMounted = true;
 
     const loadQuiz = async () => {
       if (!quizId) {
-        setError(
-          "No se indicó la evaluación que querés abrir.",
-        );
+        setError("No se indicó la evaluación que querés abrir.");
         setIsLoading(false);
         return;
       }
 
       if (!getAccessToken()) {
-        setError(
-          "Debés iniciar sesión para realizar esta evaluación.",
-        );
+        setError("Debés iniciar sesión para realizar esta evaluación.");
         setIsLoading(false);
         return;
       }
@@ -161,11 +122,10 @@ function QuizPage() {
         setIsLoading(true);
         setError("");
 
-        const [quizData, attempts] =
-          await Promise.all([
-            getQuizById(quizId),
-            getMyQuizAttempts(),
-          ]);
+        const [quizData, attempts] = await Promise.all([
+          getQuizById(quizId),
+          getMyQuizAttempts(),
+        ]);
 
         if (!isMounted) {
           return;
@@ -177,8 +137,7 @@ function QuizPage() {
           attempts.find(
             (currentAttempt) =>
               currentAttempt.quizId === quizId &&
-              currentAttempt.status ===
-                "IN_PROGRESS",
+              currentAttempt.status === "IN_PROGRESS",
           ) ?? null;
 
         if (activeAttempt) {
@@ -190,8 +149,7 @@ function QuizPage() {
           attempts.find(
             (currentAttempt) =>
               currentAttempt.quizId === quizId &&
-              currentAttempt.status ===
-                "COMPLETED",
+              currentAttempt.status === "COMPLETED",
           ) ?? null;
 
         if (!completedAttemptSummary) {
@@ -199,42 +157,32 @@ function QuizPage() {
           return;
         }
 
-        const completedAttempt =
-          await getMyQuizAttemptById(
-            completedAttemptSummary.id,
-          );
+        const completedAttempt = await getMyQuizAttemptById(
+          completedAttemptSummary.id,
+        );
 
         if (!isMounted) {
           return;
         }
 
-        const correctAnswers =
-          completedAttempt.answers.filter(
-            (answer) => answer.isCorrect,
-          ).length;
+        const correctAnswers = completedAttempt.answers.filter(
+          (answer) => answer.isCorrect,
+        ).length;
 
-        const totalQuestions =
-          completedAttempt.answers.length;
+        const totalQuestions = completedAttempt.answers.length;
 
-        const score =
-          completedAttempt.score ?? 0;
+        const score = completedAttempt.score ?? 0;
 
-        const restoredResult: QuizAttemptResult =
-          {
-            correctAnswers,
-            totalQuestions,
-            score,
-            passingScore:
-              quizData.passingScore,
-            passed:
-              score >=
-              quizData.passingScore,
-          };
+        const restoredResult: QuizAttemptResult = {
+          correctAnswers,
+          totalQuestions,
+          score,
+          passingScore: quizData.passingScore,
+          passed: score >= quizData.passingScore,
+        };
 
         setAttempt(completedAttempt);
-        setSubmittedAttempt(
-          completedAttempt,
-        );
+        setSubmittedAttempt(completedAttempt);
         setResult(restoredResult);
       } catch (loadError) {
         if (!isMounted) {
@@ -266,9 +214,7 @@ function QuizPage() {
     }
 
     return quiz.questions.filter(
-      (question) =>
-        (answers[question.id]?.length ?? 0) >
-        0,
+      (question) => (answers[question.id]?.length ?? 0) > 0,
     ).length;
   }, [answers, quiz]);
 
@@ -281,8 +227,7 @@ function QuizPage() {
       setIsStarting(true);
       setFormError("");
 
-      const newAttempt =
-        await createQuizAttempt(quiz.id);
+      const newAttempt = await createQuizAttempt(quiz.id);
 
       setAttempt(newAttempt);
       setAnswers({});
@@ -299,33 +244,20 @@ function QuizPage() {
     }
   };
 
-  const handleOptionChange = (
-    question: QuizQuestion,
-    optionId: string,
-  ) => {
+  const handleOptionChange = (question: QuizQuestion, optionId: string) => {
     setFormError("");
 
     setAnswers((currentAnswers) => {
-      const currentSelection =
-        currentAnswers[question.id] ?? [];
+      const currentSelection = currentAnswers[question.id] ?? [];
 
-      if (
-        question.type ===
-        "MULTIPLE_CHOICE"
-      ) {
-        const isSelected =
-          currentSelection.includes(optionId);
+      if (question.type === "MULTIPLE_CHOICE") {
+        const isSelected = currentSelection.includes(optionId);
 
         return {
           ...currentAnswers,
           [question.id]: isSelected
-            ? currentSelection.filter(
-                (id) => id !== optionId,
-              )
-            : [
-                ...currentSelection,
-                optionId,
-              ],
+            ? currentSelection.filter((id) => id !== optionId)
+            : [...currentSelection, optionId],
         };
       }
 
@@ -341,12 +273,9 @@ function QuizPage() {
       return;
     }
 
-    const unansweredQuestions =
-      quiz.questions.filter(
-        (question) =>
-          (answers[question.id]?.length ??
-            0) === 0,
-      );
+    const unansweredQuestions = quiz.questions.filter(
+      (question) => (answers[question.id]?.length ?? 0) === 0,
+    );
 
     if (unansweredQuestions.length > 0) {
       setFormError(
@@ -359,21 +288,15 @@ function QuizPage() {
       setIsSubmitting(true);
       setFormError("");
 
-      const submission =
-        await submitQuizAttempt(
-          attempt.id,
-          quiz.questions.map(
-            (question) => ({
-              questionId: question.id,
-              optionIds:
-                answers[question.id] ?? [],
-            }),
-          ),
-        );
-
-      setSubmittedAttempt(
-        submission.attempt,
+      const submission = await submitQuizAttempt(
+        attempt.id,
+        quiz.questions.map((question) => ({
+          questionId: question.id,
+          optionIds: answers[question.id] ?? [],
+        })),
       );
+
+      setSubmittedAttempt(submission.attempt);
 
       setResult(submission.result);
       setAttempt(submission.attempt);
@@ -391,9 +314,7 @@ function QuizPage() {
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-950 px-6 text-slate-100">
-        <p className="text-sm text-slate-500">
-          Cargando evaluación...
-        </p>
+        <p className="text-sm text-slate-500">Cargando evaluación...</p>
       </div>
     );
   }
@@ -407,8 +328,7 @@ function QuizPage() {
           </p>
 
           <p className="mt-3 text-sm leading-6 text-slate-400">
-            {error ||
-              "La evaluación solicitada no está disponible."}
+            {error || "La evaluación solicitada no está disponible."}
           </p>
 
           {quizId && !getAccessToken() ? (
@@ -436,7 +356,16 @@ function QuizPage() {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-100">
         <header className="border-b border-slate-800 bg-slate-950/95">
-          <div className="mx-auto flex h-20 max-w-5xl items-center px-5 lg:px-8">
+          <div className="mx-auto flex h-20 max-w-5xl items-center gap-4 px-5 lg:px-8">
+            <Link
+              to="/"
+              className="inline-flex items-center gap-2 text-sm font-medium text-slate-400 transition hover:text-white"
+            >
+              Inicio
+            </Link>
+
+            <span className="text-slate-700">/</span>
+
             <Link
               to={`/modules/${quiz.module.id}`}
               className="inline-flex items-center gap-2 text-sm font-medium text-slate-400 transition hover:text-white"
@@ -457,18 +386,14 @@ function QuizPage() {
           >
             <p
               className={`text-sm font-medium ${
-                result.passed
-                  ? "text-emerald-300"
-                  : "text-amber-300"
+                result.passed ? "text-emerald-300" : "text-amber-300"
               }`}
             >
               Resultado de la evaluación
             </p>
 
             <h1 className="mt-3 text-3xl font-semibold text-white">
-              {result.passed
-                ? "Evaluación aprobada"
-                : "Evaluación no aprobada"}
+              {result.passed ? "Evaluación aprobada" : "Evaluación no aprobada"}
             </h1>
 
             <div className="mt-8 grid gap-4 sm:grid-cols-3">
@@ -488,8 +413,7 @@ function QuizPage() {
                 </p>
 
                 <p className="mt-2 text-3xl font-semibold text-white">
-                  {result.correctAnswers}/
-                  {result.totalQuestions}
+                  {result.correctAnswers}/{result.totalQuestions}
                 </p>
               </div>
 
@@ -511,80 +435,63 @@ function QuizPage() {
             </h2>
 
             <div className="mt-6 space-y-5">
-              {submittedAttempt.answers.map(
-                (answer, index) => (
-                  <article
-                    key={answer.id}
-                    className="rounded-2xl border border-slate-800 bg-slate-900/50 p-6"
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
-                        Pregunta {index + 1}
+              {submittedAttempt.answers.map((answer, index) => (
+                <article
+                  key={answer.id}
+                  className="rounded-2xl border border-slate-800 bg-slate-900/50 p-6"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                      Pregunta {index + 1}
+                    </p>
+
+                    <span
+                      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${
+                        answer.isCorrect
+                          ? "bg-emerald-500/10 text-emerald-300"
+                          : "bg-red-500/10 text-red-300"
+                      }`}
+                    >
+                      {answer.isCorrect && <CheckIcon />}
+
+                      {answer.isCorrect ? "Correcta" : "Incorrecta"}
+                    </span>
+                  </div>
+
+                  <h3 className="mt-3 text-lg font-semibold text-white">
+                    {answer.question.text}
+                  </h3>
+
+                  <div className="mt-4">
+                    <p className="text-xs uppercase tracking-wider text-slate-500">
+                      Tu respuesta
+                    </p>
+
+                    <div className="mt-2 space-y-2">
+                      {answer.selectedOptions.map((selectedOption) => (
+                        <div
+                          key={selectedOption.optionId}
+                          className="rounded-lg border border-slate-800 bg-slate-950/60 px-4 py-3 text-sm text-slate-300"
+                        >
+                          {selectedOption.option.text}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {answer.question.explanation && (
+                    <div className="mt-5 rounded-xl border border-cyan-500/10 bg-cyan-500/5 p-4">
+                      <p className="text-xs font-medium uppercase tracking-wider text-cyan-400">
+                        Explicación
                       </p>
 
-                      <span
-                        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${
-                          answer.isCorrect
-                            ? "bg-emerald-500/10 text-emerald-300"
-                            : "bg-red-500/10 text-red-300"
-                        }`}
-                      >
-                        {answer.isCorrect && (
-                          <CheckIcon />
-                        )}
-
-                        {answer.isCorrect
-                          ? "Correcta"
-                          : "Incorrecta"}
-                      </span>
-                    </div>
-
-                    <h3 className="mt-3 text-lg font-semibold text-white">
-                      {answer.question.text}
-                    </h3>
-
-                    <div className="mt-4">
-                      <p className="text-xs uppercase tracking-wider text-slate-500">
-                        Tu respuesta
+                      <p className="mt-2 text-sm leading-6 text-slate-300">
+                        {answer.question.explanation}
                       </p>
-
-                      <div className="mt-2 space-y-2">
-                        {answer.selectedOptions.map(
-                          (selectedOption) => (
-                            <div
-                              key={
-                                selectedOption.optionId
-                              }
-                              className="rounded-lg border border-slate-800 bg-slate-950/60 px-4 py-3 text-sm text-slate-300"
-                            >
-                              {
-                                selectedOption
-                                  .option.text
-                              }
-                            </div>
-                          ),
-                        )}
-                      </div>
                     </div>
-
-                    {answer.question
-                      .explanation && (
-                      <div className="mt-5 rounded-xl border border-cyan-500/10 bg-cyan-500/5 p-4">
-                        <p className="text-xs font-medium uppercase tracking-wider text-cyan-400">
-                          Explicación
-                        </p>
-
-                        <p className="mt-2 text-sm leading-6 text-slate-300">
-                          {
-                            answer.question
-                              .explanation
-                          }
-                        </p>
-                      </div>
-                    )}
-                  </article>
-                ),
-              )}
+                  )}
+                </article>
+              ))}
             </div>
           </div>
         </main>
@@ -614,9 +521,7 @@ function QuizPage() {
                 <QuizIcon />
               </div>
 
-              <p className="text-sm font-medium">
-                {quiz.module.title}
-              </p>
+              <p className="text-sm font-medium">{quiz.module.title}</p>
             </div>
 
             <h1 className="mt-6 max-w-3xl text-4xl font-semibold tracking-tight text-white sm:text-5xl">
@@ -624,8 +529,7 @@ function QuizPage() {
             </h1>
 
             <p className="mt-5 max-w-3xl text-base leading-7 text-slate-400">
-              {quiz.description ??
-                "Evaluación del módulo."}
+              {quiz.description ?? "Evaluación del módulo."}
             </p>
 
             <div className="mt-8 flex flex-wrap gap-6 text-sm text-slate-500">
@@ -633,9 +537,7 @@ function QuizPage() {
                 <span className="font-semibold text-white">
                   {quiz.questions.length}
                 </span>{" "}
-                {quiz.questions.length === 1
-                  ? "pregunta"
-                  : "preguntas"}
+                {quiz.questions.length === 1 ? "pregunta" : "preguntas"}
               </p>
 
               <p>
@@ -660,10 +562,8 @@ function QuizPage() {
               </h2>
 
               <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-400">
-                Una vez iniciado el intento,
-                respondé todas las preguntas y
-                enviá la evaluación para obtener
-                tu resultado.
+                Una vez iniciado el intento, respondé todas las preguntas y
+                enviá la evaluación para obtener tu resultado.
               </p>
 
               {formError && (
@@ -678,9 +578,7 @@ function QuizPage() {
                 disabled={isStarting}
                 className="mt-7 rounded-lg bg-violet-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-violet-300 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {isStarting
-                  ? "Iniciando..."
-                  : "Iniciar evaluación"}
+                {isStarting ? "Iniciando..." : "Iniciar evaluación"}
               </button>
             </div>
           ) : (
@@ -692,100 +590,74 @@ function QuizPage() {
                   </p>
 
                   <p className="mt-1 text-sm text-slate-500">
-                    {answeredQuestions} de{" "}
-                    {quiz.questions.length}{" "}
-                    respondidas
+                    {answeredQuestions} de {quiz.questions.length} respondidas
                   </p>
                 </div>
               </div>
 
               <div className="space-y-6">
-                {quiz.questions.map(
-                  (question, index) => {
-                    const selectedOptions =
-                      answers[
-                        question.id
-                      ] ?? [];
+                {quiz.questions.map((question, index) => {
+                  const selectedOptions = answers[question.id] ?? [];
 
-                    return (
-                      <article
-                        key={question.id}
-                        className="rounded-2xl border border-slate-800 bg-slate-900/50 p-6 sm:p-8"
-                      >
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                          <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
-                            Pregunta {index + 1}
-                          </p>
+                  return (
+                    <article
+                      key={question.id}
+                      className="rounded-2xl border border-slate-800 bg-slate-900/50 p-6 sm:p-8"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                          Pregunta {index + 1}
+                        </p>
 
-                          <span className="rounded-full bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-400">
-                            {
-                              questionTypeLabels[
-                                question.type
-                              ]
-                            }
-                          </span>
-                        </div>
+                        <span className="rounded-full bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-400">
+                          {questionTypeLabels[question.type]}
+                        </span>
+                      </div>
 
-                        <h2 className="mt-4 text-xl font-semibold leading-8 text-white">
-                          {question.text}
-                        </h2>
+                      <h2 className="mt-4 text-xl font-semibold leading-8 text-white">
+                        {question.text}
+                      </h2>
 
-                        <div className="mt-6 space-y-3">
-                          {question.options.map(
-                            (option) => {
-                              const isSelected =
-                                selectedOptions.includes(
-                                  option.id,
-                                );
+                      <div className="mt-6 space-y-3">
+                        {question.options.map((option) => {
+                          const isSelected = selectedOptions.includes(
+                            option.id,
+                          );
 
-                              const inputType =
-                                question.type ===
-                                "MULTIPLE_CHOICE"
-                                  ? "checkbox"
-                                  : "radio";
+                          const inputType =
+                            question.type === "MULTIPLE_CHOICE"
+                              ? "checkbox"
+                              : "radio";
 
-                              return (
-                                <label
-                                  key={option.id}
-                                  className={`flex cursor-pointer items-start gap-4 rounded-xl border p-4 transition ${
-                                    isSelected
-                                      ? "border-violet-400/50 bg-violet-500/10"
-                                      : "border-slate-800 bg-slate-950/50 hover:border-slate-700"
-                                  }`}
-                                >
-                                  <input
-                                    type={
-                                      inputType
-                                    }
-                                    name={
-                                      question.id
-                                    }
-                                    checked={
-                                      isSelected
-                                    }
-                                    onChange={() =>
-                                      handleOptionChange(
-                                        question,
-                                        option.id,
-                                      )
-                                    }
-                                    className="mt-1 h-4 w-4 accent-violet-400"
-                                  />
+                          return (
+                            <label
+                              key={option.id}
+                              className={`flex cursor-pointer items-start gap-4 rounded-xl border p-4 transition ${
+                                isSelected
+                                  ? "border-violet-400/50 bg-violet-500/10"
+                                  : "border-slate-800 bg-slate-950/50 hover:border-slate-700"
+                              }`}
+                            >
+                              <input
+                                type={inputType}
+                                name={question.id}
+                                checked={isSelected}
+                                onChange={() =>
+                                  handleOptionChange(question, option.id)
+                                }
+                                className="mt-1 h-4 w-4 accent-violet-400"
+                              />
 
-                                  <span className="text-sm leading-6 text-slate-300">
-                                    {
-                                      option.text
-                                    }
-                                  </span>
-                                </label>
-                              );
-                            },
-                          )}
-                        </div>
-                      </article>
-                    );
-                  },
-                )}
+                              <span className="text-sm leading-6 text-slate-300">
+                                {option.text}
+                              </span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </article>
+                  );
+                })}
               </div>
 
               {formError && (
@@ -801,9 +673,7 @@ function QuizPage() {
                   disabled={isSubmitting}
                   className="rounded-lg bg-violet-400 px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-violet-300 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {isSubmitting
-                    ? "Enviando..."
-                    : "Finalizar evaluación"}
+                  {isSubmitting ? "Enviando..." : "Finalizar evaluación"}
                 </button>
               </div>
             </>
