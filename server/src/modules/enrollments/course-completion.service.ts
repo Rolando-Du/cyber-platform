@@ -22,7 +22,7 @@ export const syncCourseCompletion = async (
     return null;
   }
 
-  if (enrollment.status !== "ACTIVE") {
+  if (enrollment.status === "CANCELLED") {
     return enrollment;
   }
 
@@ -97,21 +97,40 @@ export const syncCourseCompletion = async (
     lessons.length > 0 ||
     quizzes.length > 0;
 
+  const isCourseCompleted =
+    hasContent &&
+    allLessonsCompleted &&
+    allQuizzesApproved;
+
   if (
-    !hasContent ||
-    !allLessonsCompleted ||
-    !allQuizzesApproved
+    isCourseCompleted &&
+    enrollment.status === "ACTIVE"
   ) {
-    return enrollment;
+    return prisma.enrollment.update({
+      where: {
+        id: enrollment.id,
+      },
+      data: {
+        status: "COMPLETED",
+        completedAt: new Date(),
+      },
+    });
   }
 
-  return prisma.enrollment.update({
-    where: {
-      id: enrollment.id,
-    },
-    data: {
-      status: "COMPLETED",
-      completedAt: new Date(),
-    },
-  });
+  if (
+    !isCourseCompleted &&
+    enrollment.status === "COMPLETED"
+  ) {
+    return prisma.enrollment.update({
+      where: {
+        id: enrollment.id,
+      },
+      data: {
+        status: "ACTIVE",
+        completedAt: null,
+      },
+    });
+  }
+
+  return enrollment;
 };

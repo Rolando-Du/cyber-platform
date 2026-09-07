@@ -10,18 +10,20 @@ import type {
 export const getUserEnrollments = async (
   userId: string,
 ) => {
-  const activeEnrollments =
+  const syncableEnrollments =
     await prisma.enrollment.findMany({
       where: {
         userId,
-        status: "ACTIVE",
+        status: {
+          in: ["ACTIVE", "COMPLETED"],
+        },
       },
       select: {
         courseId: true,
       },
     });
 
-  for (const enrollment of activeEnrollments) {
+  for (const enrollment of syncableEnrollments) {
     await syncCourseCompletion(
       userId,
       enrollment.courseId,
@@ -70,7 +72,7 @@ export const getUserEnrollmentById = async (
     return null;
   }
 
-  if (enrollment.status === "ACTIVE") {
+  if (enrollment.status !== "CANCELLED") {
     await syncCourseCompletion(
       userId,
       enrollment.courseId,
