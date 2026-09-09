@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+
 import { Link, useParams } from "react-router-dom";
 
 import { getAccessToken } from "../lib/auth";
@@ -70,10 +71,49 @@ function QuizIcon() {
   );
 }
 
-const questionTypeLabels = {
+const questionTypeLabels: Record<QuizQuestion["type"], string> = {
   SINGLE_CHOICE: "Una respuesta",
   MULTIPLE_CHOICE: "Varias respuestas",
   TRUE_FALSE: "Verdadero o falso",
+};
+
+const hashString = (value: string) => {
+  let hash = 2166136261;
+
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+
+  return hash >>> 0;
+};
+
+const createSeededRandom = (seed: number) => {
+  let state = seed || 1;
+
+  return () => {
+    state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+    return state / 4294967296;
+  };
+};
+
+const shuffleOptions = <T,>(
+  options: readonly T[],
+  seedText: string,
+): T[] => {
+  const shuffled = [...options];
+  const random = createSeededRandom(hashString(seedText));
+
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(random() * (index + 1));
+
+    [shuffled[index], shuffled[swapIndex]] = [
+      shuffled[swapIndex],
+      shuffled[index],
+    ];
+  }
+
+  return shuffled;
 };
 
 function QuizPage() {
@@ -217,6 +257,24 @@ function QuizPage() {
       (question) => (answers[question.id]?.length ?? 0) > 0,
     ).length;
   }, [answers, quiz]);
+
+  const displayedQuestions = useMemo(() => {
+    if (!quiz) {
+      return [];
+    }
+
+    if (!attempt) {
+      return quiz.questions;
+    }
+
+    return quiz.questions.map((question) => ({
+      ...question,
+      options: shuffleOptions(
+        question.options,
+        `${attempt.id}:${question.id}`,
+      ),
+    }));
+  }, [attempt, quiz]);
 
   const handleStartAttempt = async () => {
     if (!quiz) {
@@ -429,6 +487,35 @@ function QuizPage() {
             </div>
           </div>
 
+          {!result.passed && (
+            <div className="mt-6 rounded-2xl border border-violet-500/20 bg-violet-500/5 p-6">
+              <p className="text-sm font-medium text-violet-300">
+                Podés volver a intentarlo
+              </p>
+
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
+                Este intento queda guardado en tu historial. Podés iniciar uno
+                nuevo y volver a responder las 10 preguntas para alcanzar el
+                puntaje mínimo requerido.
+              </p>
+
+              {formError && (
+                <div className="mt-5 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                  {formError}
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={handleStartAttempt}
+                disabled={isStarting}
+                className="mt-5 rounded-lg bg-violet-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-violet-300 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isStarting ? "Iniciando..." : "Reintentar evaluación"}
+              </button>
+            </div>
+          )}
+
           <div className="mt-10">
             <h2 className="text-2xl font-semibold text-white">
               Revisión de respuestas
@@ -596,7 +683,7 @@ function QuizPage() {
               </div>
 
               <div className="space-y-6">
-                {quiz.questions.map((question, index) => {
+                {displayedQuestions.map((question, index) => {
                   const selectedOptions = answers[question.id] ?? [];
 
                   return (

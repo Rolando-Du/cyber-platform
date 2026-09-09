@@ -79,7 +79,7 @@ export const createLessonProgress = async (
     throw new Error("LESSON_NOT_FOUND");
   }
 
-  const enrollment = await prisma.enrollment.findUnique({
+  let enrollment = await prisma.enrollment.findUnique({
     where: {
       userId_courseId: {
         userId,
@@ -94,6 +94,21 @@ export const createLessonProgress = async (
 
   if (!enrollment) {
     throw new Error("ENROLLMENT_REQUIRED");
+  }
+
+  if (enrollment.status === "COMPLETED") {
+    const syncedEnrollment =
+      await syncCourseCompletion(
+        userId,
+        lesson.module.courseId,
+      );
+
+    if (syncedEnrollment) {
+      enrollment = {
+        id: syncedEnrollment.id,
+        status: syncedEnrollment.status,
+      };
+    }
   }
 
   if (enrollment.status !== "ACTIVE") {
@@ -198,7 +213,7 @@ export const updateLessonProgress = async (
   const courseId =
     existingProgress.lesson.module.courseId;
 
-  const enrollment =
+  let enrollment =
     await prisma.enrollment.findUnique({
       where: {
         userId_courseId: {
@@ -207,12 +222,28 @@ export const updateLessonProgress = async (
         },
       },
       select: {
+        id: true,
         status: true,
       },
     });
 
   if (!enrollment) {
     throw new Error("ENROLLMENT_REQUIRED");
+  }
+
+  if (enrollment.status === "COMPLETED") {
+    const syncedEnrollment =
+      await syncCourseCompletion(
+        userId,
+        courseId,
+      );
+
+    if (syncedEnrollment) {
+      enrollment = {
+        id: syncedEnrollment.id,
+        status: syncedEnrollment.status,
+      };
+    }
   }
 
   if (enrollment.status !== "ACTIVE") {
