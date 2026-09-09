@@ -239,6 +239,7 @@ model Quiz {
   description  String?
   status       ContentStatus @default(DRAFT)
   passingScore Int           @default(70)
+  version      Int           @default(1)
   order        Int           @default(0)
 
   module    Module        @relation(fields: [moduleId], references: [id], onDelete: Cascade)
@@ -250,6 +251,7 @@ model Quiz {
 
   @@index([moduleId])
   @@index([status])
+  @@index([version])
   @@index([order])
   @@map("quizzes")
 }
@@ -294,11 +296,12 @@ model QuestionOption {
 }
 
 model QuizAttempt {
-  id     String            @id @default(uuid()) @db.Uuid
-  userId String            @db.Uuid
-  quizId String            @db.Uuid
-  status QuizAttemptStatus @default(IN_PROGRESS)
-  score  Int?
+  id          String            @id @default(uuid()) @db.Uuid
+  userId      String            @db.Uuid
+  quizId      String            @db.Uuid
+  quizVersion Int               @default(1)
+  status      QuizAttemptStatus @default(IN_PROGRESS)
+  score       Int?
 
   user    User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   quiz    Quiz                @relation(fields: [quizId], references: [id], onDelete: Cascade)
@@ -311,6 +314,7 @@ model QuizAttempt {
 
   @@index([userId])
   @@index([quizId])
+  @@index([quizVersion])
   @@index([status])
   @@map("quiz_attempts")
 }

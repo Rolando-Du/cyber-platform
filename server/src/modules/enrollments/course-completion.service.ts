@@ -50,6 +50,7 @@ export const syncCourseCompletion = async (
     select: {
       id: true,
       passingScore: true,
+      version: true,
       attempts: {
         where: {
           userId,
@@ -57,6 +58,7 @@ export const syncCourseCompletion = async (
         },
         select: {
           score: true,
+          quizVersion: true,
         },
       },
     },
@@ -79,6 +81,7 @@ export const syncCourseCompletion = async (
     (quiz) =>
       quiz.attempts.some(
         (attempt) =>
+          attempt.quizVersion === quiz.version &&
           attempt.score !== null &&
           attempt.score >=
             quiz.passingScore,

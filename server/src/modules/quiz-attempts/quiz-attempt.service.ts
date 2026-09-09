@@ -8,14 +8,24 @@ import type {
 } from "./quiz-attempt.schemas.js";
 
 export const getUserQuizAttempts = async (userId: string) => {
-  return prisma.quizAttempt.findMany({
+  const attempts = await prisma.quizAttempt.findMany({
     where: {
       userId,
     },
     orderBy: {
       createdAt: "desc",
     },
-    include: {
+    select: {
+      id: true,
+      userId: true,
+      quizId: true,
+      quizVersion: true,
+      status: true,
+      score: true,
+      startedAt: true,
+      completedAt: true,
+      createdAt: true,
+      updatedAt: true,
       quiz: {
         include: {
           module: {
@@ -27,6 +37,11 @@ export const getUserQuizAttempts = async (userId: string) => {
       },
     },
   });
+
+  return attempts.filter(
+    (attempt) =>
+      attempt.quizVersion === attempt.quiz.version,
+  );
 };
 
 export const getUserQuizAttemptById = async (
@@ -137,6 +152,7 @@ export const createQuizAttempt = async (
     where: {
       userId,
       quizId: input.quizId,
+      quizVersion: quiz.version,
       status: "IN_PROGRESS",
     },
     select: {
@@ -152,6 +168,7 @@ export const createQuizAttempt = async (
     data: {
       userId,
       quizId: input.quizId,
+      quizVersion: quiz.version,
       status: "IN_PROGRESS",
       startedAt: new Date(),
     },
@@ -179,7 +196,17 @@ export const submitQuizAttempt = async (
       id,
       userId,
     },
-    include: {
+    select: {
+      id: true,
+      userId: true,
+      quizId: true,
+      quizVersion: true,
+      status: true,
+      score: true,
+      startedAt: true,
+      completedAt: true,
+      createdAt: true,
+      updatedAt: true,
       quiz: {
         include: {
           module: {
@@ -210,6 +237,12 @@ export const submitQuizAttempt = async (
 
   if (attempt.status !== "IN_PROGRESS") {
     throw new Error("QUIZ_ATTEMPT_ALREADY_COMPLETED");
+  }
+
+  if (
+    attempt.quizVersion !== attempt.quiz.version
+  ) {
+    throw new Error("QUIZ_VERSION_OUTDATED");
   }
 
   const courseId =
@@ -448,6 +481,10 @@ export const submitQuizAttempt = async (
             },
           },
         });
+      },
+      {
+        maxWait: 5000,
+        timeout: 20000,
       },
     );
 

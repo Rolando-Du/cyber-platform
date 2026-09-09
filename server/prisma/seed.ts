@@ -1,33 +1,23 @@
 import { prisma } from "../src/config/prisma.js";
 
-const learningPathId =
-  "6d7c211a-6c5c-4f94-ad68-93c24634b235";
+const learningPathId = "6d7c211a-6c5c-4f94-ad68-93c24634b235";
 
-const courseId =
-  "ebe1a74c-dadb-4ae1-98c5-3be147f61e2d";
+const courseId = "ebe1a74c-dadb-4ae1-98c5-3be147f61e2d";
 
-const moduleId =
-  "f87bc997-c7ab-4a6f-88ba-0685fa8f31d7";
+const moduleId = "f87bc997-c7ab-4a6f-88ba-0685fa8f31d7";
 
-const lessonOneId =
-  "5e0dbef4-c717-4c01-8230-cbbd21a66a2d";
+const lessonOneId = "5e0dbef4-c717-4c01-8230-cbbd21a66a2d";
 
-const lessonTwoId =
-  "e176edbb-e4e8-49f5-b96f-5914a269047f";
+const lessonTwoId = "e176edbb-e4e8-49f5-b96f-5914a269047f";
 
-const lessonThreeId =
-  "9a4ea79b-5118-4d2b-b06c-ce5feff14774";
+const lessonThreeId = "9a4ea79b-5118-4d2b-b06c-ce5feff14774";
 
-const quizId =
-  "5ad36250-6f1d-4ebd-9eeb-7720daf7c9eb";
+const quizId = "5ad36250-6f1d-4ebd-9eeb-7720daf7c9eb";
 
-const questionId =
-  "c1b4068c-135b-4d6b-bc37-731f1bd807fb";
+const questionId = "c1b4068c-135b-4d6b-bc37-731f1bd807fb";
 
 const main = async () => {
-  console.log(
-    "Iniciando seed de Cyber Platform...",
-  );
+  console.log("Iniciando seed de Cyber Platform...");
 
   await prisma.learningPath.upsert({
     where: {
@@ -86,8 +76,7 @@ const main = async () => {
     update: {
       courseId,
       title: "Introducción a las Redes",
-      description:
-        "Bases de comunicación, modelos y protocolos fundamentales.",
+      description: "Bases de comunicación, modelos y protocolos fundamentales.",
       status: "PUBLISHED",
       order: 1,
     },
@@ -95,8 +84,7 @@ const main = async () => {
       id: moduleId,
       courseId,
       title: "Introducción a las Redes",
-      description:
-        "Bases de comunicación, modelos y protocolos fundamentales.",
+      description: "Bases de comunicación, modelos y protocolos fundamentales.",
       status: "PUBLISHED",
       order: 1,
     },
@@ -379,6 +367,7 @@ const main = async () => {
         "Evaluación de los conceptos fundamentales del módulo de introducción a las redes.",
       status: "PUBLISHED",
       passingScore: 70,
+      version: 2,
       order: 1,
     },
     create: {
@@ -389,7 +378,34 @@ const main = async () => {
         "Evaluación de los conceptos fundamentales del módulo de introducción a las redes.",
       status: "PUBLISHED",
       passingScore: 70,
+      version: 2,
       order: 1,
+    },
+  });
+
+  // Limpieza de UUID antiguos que PostgreSQL aceptaba,
+  // pero que z.uuid rechaza por no usar una variante RFC válida.
+  await prisma.questionOption.deleteMany({
+    where: {
+      id: {
+        in: [
+          "7d4a2c60-71bf-4e94-d155-6f9c1072e001",
+        ],
+      },
+    },
+  });
+
+  await prisma.question.deleteMany({
+    where: {
+      quizId,
+      id: {
+        in: [
+          "6c3f1b59-60ae-4d83-c044-5e8b0f61d001",
+          "7d4a2c60-71bf-4e94-d155-6f9c1072e002",
+          "8e5b3d71-82c0-4fa5-e266-70ad2183f001",
+          "9f6c4e82-93d1-40b6-f377-81be3294a001",
+        ],
+      },
     },
   });
 
@@ -454,17 +470,781 @@ const main = async () => {
     },
   });
 
+  await prisma.questionOption.upsert({
+    where: {
+      id: "7d4a2c60-71bf-4e94-a155-6f9c1072e001",
+    },
+    update: {
+      questionId,
+      text: "Permitir únicamente que un dispositivo funcione sin conexión a otros equipos.",
+      isCorrect: false,
+      order: 3,
+    },
+    create: {
+      id: "7d4a2c60-71bf-4e94-a155-6f9c1072e001",
+      questionId,
+      text: "Permitir únicamente que un dispositivo funcione sin conexión a otros equipos.",
+      isCorrect: false,
+      order: 3,
+    },
+  });
+
+  const questionTwoId = "3f0f8f28-3f7b-4a59-bd11-2b5dfd3fa001";
+
+  await prisma.question.upsert({
+    where: {
+      id: questionTwoId,
+    },
+    update: {
+      quizId,
+      type: "SINGLE_CHOICE",
+      text: "¿Cuántas capas tiene el modelo OSI?",
+      explanation:
+        "El modelo OSI divide la comunicación de red en siete capas: Física, Enlace de datos, Red, Transporte, Sesión, Presentación y Aplicación.",
+      order: 2,
+    },
+    create: {
+      id: questionTwoId,
+      quizId,
+      type: "SINGLE_CHOICE",
+      text: "¿Cuántas capas tiene el modelo OSI?",
+      explanation:
+        "El modelo OSI divide la comunicación de red en siete capas: Física, Enlace de datos, Red, Transporte, Sesión, Presentación y Aplicación.",
+      order: 2,
+    },
+  });
+
+  await prisma.questionOption.upsert({
+    where: {
+      id: "3f0f8f28-3f7b-4a59-bd11-2b5dfd3fa002",
+    },
+    update: {
+      questionId: questionTwoId,
+      text: "4 capas",
+      isCorrect: false,
+      order: 1,
+    },
+    create: {
+      id: "3f0f8f28-3f7b-4a59-bd11-2b5dfd3fa002",
+      questionId: questionTwoId,
+      text: "4 capas",
+      isCorrect: false,
+      order: 1,
+    },
+  });
+
+  await prisma.questionOption.upsert({
+    where: {
+      id: "3f0f8f28-3f7b-4a59-bd11-2b5dfd3fa003",
+    },
+    update: {
+      questionId: questionTwoId,
+      text: "7 capas",
+      isCorrect: true,
+      order: 2,
+    },
+    create: {
+      id: "3f0f8f28-3f7b-4a59-bd11-2b5dfd3fa003",
+      questionId: questionTwoId,
+      text: "7 capas",
+      isCorrect: true,
+      order: 2,
+    },
+  });
+
+  await prisma.questionOption.upsert({
+    where: {
+      id: "3f0f8f28-3f7b-4a59-bd11-2b5dfd3fa004",
+    },
+    update: {
+      questionId: questionTwoId,
+      text: "5 capas",
+      isCorrect: false,
+      order: 3,
+    },
+    create: {
+      id: "3f0f8f28-3f7b-4a59-bd11-2b5dfd3fa004",
+      questionId: questionTwoId,
+      text: "5 capas",
+      isCorrect: false,
+      order: 3,
+    },
+  });
+  const questionThreeId =
+    "4a1f9d37-4e8c-4b61-ae22-3c6efd4fb001";
+
+  await prisma.question.upsert({
+    where: {
+      id: questionThreeId,
+    },
+    update: {
+      quizId,
+      type: "SINGLE_CHOICE",
+      text: "¿Cuál es la función principal de DNS?",
+      explanation:
+        "DNS permite traducir nombres de dominio en direcciones IP para que los dispositivos puedan localizar los servicios y equipos correspondientes.",
+      order: 3,
+    },
+    create: {
+      id: questionThreeId,
+      quizId,
+      type: "SINGLE_CHOICE",
+      text: "¿Cuál es la función principal de DNS?",
+      explanation:
+        "DNS permite traducir nombres de dominio en direcciones IP para que los dispositivos puedan localizar los servicios y equipos correspondientes.",
+      order: 3,
+    },
+  });
+
+  await prisma.questionOption.upsert({
+    where: {
+      id: "4a1f9d37-4e8c-4b61-ae22-3c6efd4fb002",
+    },
+    update: {
+      questionId: questionThreeId,
+      text: "Traducir nombres de dominio en direcciones IP.",
+      isCorrect: true,
+      order: 1,
+    },
+    create: {
+      id: "4a1f9d37-4e8c-4b61-ae22-3c6efd4fb002",
+      questionId: questionThreeId,
+      text: "Traducir nombres de dominio en direcciones IP.",
+      isCorrect: true,
+      order: 1,
+    },
+  });
+
+  await prisma.questionOption.upsert({
+    where: {
+      id: "4a1f9d37-4e8c-4b61-ae22-3c6efd4fb003",
+    },
+    update: {
+      questionId: questionThreeId,
+      text: "Asignar automáticamente direcciones IP a los dispositivos.",
+      isCorrect: false,
+      order: 2,
+    },
+    create: {
+      id: "4a1f9d37-4e8c-4b61-ae22-3c6efd4fb003",
+      questionId: questionThreeId,
+      text: "Asignar automáticamente direcciones IP a los dispositivos.",
+      isCorrect: false,
+      order: 2,
+    },
+  });
+
+  await prisma.questionOption.upsert({
+    where: {
+      id: "4a1f9d37-4e8c-4b61-ae22-3c6efd4fb004",
+    },
+    update: {
+      questionId: questionThreeId,
+      text: "Relacionar direcciones IP con direcciones MAC.",
+      isCorrect: false,
+      order: 3,
+    },
+    create: {
+      id: "4a1f9d37-4e8c-4b61-ae22-3c6efd4fb004",
+      questionId: questionThreeId,
+      text: "Relacionar direcciones IP con direcciones MAC.",
+      isCorrect: false,
+      order: 3,
+    },
+  });
+
+
+  const questionFourId =
+    "5b2e0a48-5f9d-4c72-bf33-4d7afe50c001";
+
+  await prisma.question.upsert({
+    where: {
+      id: questionFourId,
+    },
+    update: {
+      quizId,
+      type: "SINGLE_CHOICE",
+      text: "¿Qué función cumple DHCP en una red?",
+      explanation:
+        "DHCP permite asignar automáticamente a los dispositivos parámetros de configuración como dirección IP, máscara de subred, puerta de enlace y servidores DNS.",
+      order: 4,
+    },
+    create: {
+      id: questionFourId,
+      quizId,
+      type: "SINGLE_CHOICE",
+      text: "¿Qué función cumple DHCP en una red?",
+      explanation:
+        "DHCP permite asignar automáticamente a los dispositivos parámetros de configuración como dirección IP, máscara de subred, puerta de enlace y servidores DNS.",
+      order: 4,
+    },
+  });
+
+  await prisma.questionOption.upsert({
+    where: {
+      id: "5b2e0a48-5f9d-4c72-bf33-4d7afe50c002",
+    },
+    update: {
+      questionId: questionFourId,
+      text: "Asignar automáticamente parámetros de configuración de red a los dispositivos.",
+      isCorrect: true,
+      order: 1,
+    },
+    create: {
+      id: "5b2e0a48-5f9d-4c72-bf33-4d7afe50c002",
+      questionId: questionFourId,
+      text: "Asignar automáticamente parámetros de configuración de red a los dispositivos.",
+      isCorrect: true,
+      order: 1,
+    },
+  });
+
+  await prisma.questionOption.upsert({
+    where: {
+      id: "5b2e0a48-5f9d-4c72-bf33-4d7afe50c003",
+    },
+    update: {
+      questionId: questionFourId,
+      text: "Traducir nombres de dominio en direcciones IP.",
+      isCorrect: false,
+      order: 2,
+    },
+    create: {
+      id: "5b2e0a48-5f9d-4c72-bf33-4d7afe50c003",
+      questionId: questionFourId,
+      text: "Traducir nombres de dominio en direcciones IP.",
+      isCorrect: false,
+      order: 2,
+    },
+  });
+
+  await prisma.questionOption.upsert({
+    where: {
+      id: "5b2e0a48-5f9d-4c72-bf33-4d7afe50c004",
+    },
+    update: {
+      questionId: questionFourId,
+      text: "Relacionar direcciones IP con direcciones MAC.",
+      isCorrect: false,
+      order: 3,
+    },
+    create: {
+      id: "5b2e0a48-5f9d-4c72-bf33-4d7afe50c004",
+      questionId: questionFourId,
+      text: "Relacionar direcciones IP con direcciones MAC.",
+      isCorrect: false,
+      order: 3,
+    },
+  });
+
+
+  const questionFiveId =
+    "6c3f1b59-60ae-4d83-a044-5e8b0f61d001";
+
+  await prisma.question.upsert({
+    where: {
+      id: questionFiveId,
+    },
+    update: {
+      quizId,
+      type: "SINGLE_CHOICE",
+      text: "¿Para qué se utiliza ARP dentro de una red local?",
+      explanation:
+        "ARP permite relacionar una dirección IP con la dirección MAC correspondiente dentro de una red local.",
+      order: 5,
+    },
+    create: {
+      id: questionFiveId,
+      quizId,
+      type: "SINGLE_CHOICE",
+      text: "¿Para qué se utiliza ARP dentro de una red local?",
+      explanation:
+        "ARP permite relacionar una dirección IP con la dirección MAC correspondiente dentro de una red local.",
+      order: 5,
+    },
+  });
+
+  await prisma.questionOption.upsert({
+    where: {
+      id: "6c3f1b59-60ae-4d83-a044-5e8b0f61d002",
+    },
+    update: {
+      questionId: questionFiveId,
+      text: "Relacionar una dirección IP con una dirección MAC.",
+      isCorrect: true,
+      order: 1,
+    },
+    create: {
+      id: "6c3f1b59-60ae-4d83-a044-5e8b0f61d002",
+      questionId: questionFiveId,
+      text: "Relacionar una dirección IP con una dirección MAC.",
+      isCorrect: true,
+      order: 1,
+    },
+  });
+
+  await prisma.questionOption.upsert({
+    where: {
+      id: "6c3f1b59-60ae-4d83-a044-5e8b0f61d003",
+    },
+    update: {
+      questionId: questionFiveId,
+      text: "Traducir nombres de dominio en direcciones IP.",
+      isCorrect: false,
+      order: 2,
+    },
+    create: {
+      id: "6c3f1b59-60ae-4d83-a044-5e8b0f61d003",
+      questionId: questionFiveId,
+      text: "Traducir nombres de dominio en direcciones IP.",
+      isCorrect: false,
+      order: 2,
+    },
+  });
+
+  await prisma.questionOption.upsert({
+    where: {
+      id: "6c3f1b59-60ae-4d83-a044-5e8b0f61d004",
+    },
+    update: {
+      questionId: questionFiveId,
+      text: "Asignar automáticamente direcciones IP a los dispositivos.",
+      isCorrect: false,
+      order: 3,
+    },
+    create: {
+      id: "6c3f1b59-60ae-4d83-a044-5e8b0f61d004",
+      questionId: questionFiveId,
+      text: "Asignar automáticamente direcciones IP a los dispositivos.",
+      isCorrect: false,
+      order: 3,
+    },
+  });
+
+
+  const questionSixId =
+    "7d4a2c60-71bf-4e94-a155-6f9c1072e002";
+
+  await prisma.question.upsert({
+    where: {
+      id: questionSixId,
+    },
+    update: {
+      quizId,
+      type: "SINGLE_CHOICE",
+      text: "¿Cuántas capas principales utiliza el modelo TCP/IP?",
+      explanation:
+        "El modelo TCP/IP se organiza en cuatro capas principales: Acceso a la red, Internet, Transporte y Aplicación.",
+      order: 6,
+    },
+    create: {
+      id: questionSixId,
+      quizId,
+      type: "SINGLE_CHOICE",
+      text: "¿Cuántas capas principales utiliza el modelo TCP/IP?",
+      explanation:
+        "El modelo TCP/IP se organiza en cuatro capas principales: Acceso a la red, Internet, Transporte y Aplicación.",
+      order: 6,
+    },
+  });
+
+  await prisma.questionOption.upsert({
+    where: {
+      id: "7d4a2c60-71bf-4e94-a155-6f9c1072e003",
+    },
+    update: {
+      questionId: questionSixId,
+      text: "4 capas",
+      isCorrect: true,
+      order: 1,
+    },
+    create: {
+      id: "7d4a2c60-71bf-4e94-a155-6f9c1072e003",
+      questionId: questionSixId,
+      text: "4 capas",
+      isCorrect: true,
+      order: 1,
+    },
+  });
+
+  await prisma.questionOption.upsert({
+    where: {
+      id: "7d4a2c60-71bf-4e94-a155-6f9c1072e004",
+    },
+    update: {
+      questionId: questionSixId,
+      text: "7 capas",
+      isCorrect: false,
+      order: 2,
+    },
+    create: {
+      id: "7d4a2c60-71bf-4e94-a155-6f9c1072e004",
+      questionId: questionSixId,
+      text: "7 capas",
+      isCorrect: false,
+      order: 2,
+    },
+  });
+
+  await prisma.questionOption.upsert({
+    where: {
+      id: "7d4a2c60-71bf-4e94-a155-6f9c1072e005",
+    },
+    update: {
+      questionId: questionSixId,
+      text: "5 capas",
+      isCorrect: false,
+      order: 3,
+    },
+    create: {
+      id: "7d4a2c60-71bf-4e94-a155-6f9c1072e005",
+      questionId: questionSixId,
+      text: "5 capas",
+      isCorrect: false,
+      order: 3,
+    },
+  });
+
+  const questionSevenId =
+    "8e5b3d71-82c0-4fa5-a266-70ad2183f001";
+
+  await prisma.question.upsert({
+    where: {
+      id: questionSevenId,
+    },
+    update: {
+      quizId,
+      type: "SINGLE_CHOICE",
+      text: "¿Qué capa del modelo OSI se encarga del direccionamiento y enrutamiento mediante direcciones IP?",
+      explanation:
+        "La capa de Red del modelo OSI se encarga del direccionamiento lógico y del enrutamiento de paquetes entre redes.",
+      order: 7,
+    },
+    create: {
+      id: questionSevenId,
+      quizId,
+      type: "SINGLE_CHOICE",
+      text: "¿Qué capa del modelo OSI se encarga del direccionamiento y enrutamiento mediante direcciones IP?",
+      explanation:
+        "La capa de Red del modelo OSI se encarga del direccionamiento lógico y del enrutamiento de paquetes entre redes.",
+      order: 7,
+    },
+  });
+
+  await prisma.questionOption.upsert({
+    where: {
+      id: "8e5b3d71-82c0-4fa5-a266-70ad2183f002",
+    },
+    update: {
+      questionId: questionSevenId,
+      text: "Capa de Red",
+      isCorrect: true,
+      order: 1,
+    },
+    create: {
+      id: "8e5b3d71-82c0-4fa5-a266-70ad2183f002",
+      questionId: questionSevenId,
+      text: "Capa de Red",
+      isCorrect: true,
+      order: 1,
+    },
+  });
+
+  await prisma.questionOption.upsert({
+    where: {
+      id: "8e5b3d71-82c0-4fa5-a266-70ad2183f003",
+    },
+    update: {
+      questionId: questionSevenId,
+      text: "Capa Física",
+      isCorrect: false,
+      order: 2,
+    },
+    create: {
+      id: "8e5b3d71-82c0-4fa5-a266-70ad2183f003",
+      questionId: questionSevenId,
+      text: "Capa Física",
+      isCorrect: false,
+      order: 2,
+    },
+  });
+
+  await prisma.questionOption.upsert({
+    where: {
+      id: "8e5b3d71-82c0-4fa5-a266-70ad2183f004",
+    },
+    update: {
+      questionId: questionSevenId,
+      text: "Capa de Presentación",
+      isCorrect: false,
+      order: 3,
+    },
+    create: {
+      id: "8e5b3d71-82c0-4fa5-a266-70ad2183f004",
+      questionId: questionSevenId,
+      text: "Capa de Presentación",
+      isCorrect: false,
+      order: 3,
+    },
+  });
+
+  const questionEightId =
+    "9f6c4e82-93d1-40b6-a377-81be3294a001";
+
+  await prisma.question.upsert({
+    where: {
+      id: questionEightId,
+    },
+    update: {
+      quizId,
+      type: "SINGLE_CHOICE",
+      text: "¿Qué protocolo de transporte está orientado a conexión y prioriza la entrega confiable de los datos?",
+      explanation:
+        "TCP es un protocolo orientado a conexión que incorpora mecanismos de control, confirmación y retransmisión para favorecer una entrega confiable.",
+      order: 8,
+    },
+    create: {
+      id: questionEightId,
+      quizId,
+      type: "SINGLE_CHOICE",
+      text: "¿Qué protocolo de transporte está orientado a conexión y prioriza la entrega confiable de los datos?",
+      explanation:
+        "TCP es un protocolo orientado a conexión que incorpora mecanismos de control, confirmación y retransmisión para favorecer una entrega confiable.",
+      order: 8,
+    },
+  });
+
+  await prisma.questionOption.upsert({
+    where: {
+      id: "9f6c4e82-93d1-40b6-a377-81be3294a002",
+    },
+    update: {
+      questionId: questionEightId,
+      text: "TCP",
+      isCorrect: true,
+      order: 1,
+    },
+    create: {
+      id: "9f6c4e82-93d1-40b6-a377-81be3294a002",
+      questionId: questionEightId,
+      text: "TCP",
+      isCorrect: true,
+      order: 1,
+    },
+  });
+
+  await prisma.questionOption.upsert({
+    where: {
+      id: "9f6c4e82-93d1-40b6-a377-81be3294a003",
+    },
+    update: {
+      questionId: questionEightId,
+      text: "UDP",
+      isCorrect: false,
+      order: 2,
+    },
+    create: {
+      id: "9f6c4e82-93d1-40b6-a377-81be3294a003",
+      questionId: questionEightId,
+      text: "UDP",
+      isCorrect: false,
+      order: 2,
+    },
+  });
+
+  await prisma.questionOption.upsert({
+    where: {
+      id: "9f6c4e82-93d1-40b6-a377-81be3294a004",
+    },
+    update: {
+      questionId: questionEightId,
+      text: "ARP",
+      isCorrect: false,
+      order: 3,
+    },
+    create: {
+      id: "9f6c4e82-93d1-40b6-a377-81be3294a004",
+      questionId: questionEightId,
+      text: "ARP",
+      isCorrect: false,
+      order: 3,
+    },
+  });
+
+  const questionNineId =
+    "a07d5f93-a4e2-41c7-a488-92cf43a5b001";
+
+  await prisma.question.upsert({
+    where: {
+      id: questionNineId,
+    },
+    update: {
+      quizId,
+      type: "SINGLE_CHOICE",
+      text: "¿Qué riesgo puede generar un servidor DHCP no autorizado dentro de una red?",
+      explanation:
+        "Un servidor DHCP no autorizado puede entregar parámetros de red incorrectos, como una puerta de enlace o un servidor DNS controlado por un atacante.",
+      order: 9,
+    },
+    create: {
+      id: questionNineId,
+      quizId,
+      type: "SINGLE_CHOICE",
+      text: "¿Qué riesgo puede generar un servidor DHCP no autorizado dentro de una red?",
+      explanation:
+        "Un servidor DHCP no autorizado puede entregar parámetros de red incorrectos, como una puerta de enlace o un servidor DNS controlado por un atacante.",
+      order: 9,
+    },
+  });
+
+  await prisma.questionOption.upsert({
+    where: {
+      id: "a07d5f93-a4e2-41c7-a488-92cf43a5b002",
+    },
+    update: {
+      questionId: questionNineId,
+      text: "Entregar configuraciones de red incorrectas a los dispositivos.",
+      isCorrect: true,
+      order: 1,
+    },
+    create: {
+      id: "a07d5f93-a4e2-41c7-a488-92cf43a5b002",
+      questionId: questionNineId,
+      text: "Entregar configuraciones de red incorrectas a los dispositivos.",
+      isCorrect: true,
+      order: 1,
+    },
+  });
+
+  await prisma.questionOption.upsert({
+    where: {
+      id: "a07d5f93-a4e2-41c7-a488-92cf43a5b003",
+    },
+    update: {
+      questionId: questionNineId,
+      text: "Aumentar automáticamente la velocidad de la conexión.",
+      isCorrect: false,
+      order: 2,
+    },
+    create: {
+      id: "a07d5f93-a4e2-41c7-a488-92cf43a5b003",
+      questionId: questionNineId,
+      text: "Aumentar automáticamente la velocidad de la conexión.",
+      isCorrect: false,
+      order: 2,
+    },
+  });
+
+  await prisma.questionOption.upsert({
+    where: {
+      id: "a07d5f93-a4e2-41c7-a488-92cf43a5b004",
+    },
+    update: {
+      questionId: questionNineId,
+      text: "Convertir direcciones MAC en nombres de dominio.",
+      isCorrect: false,
+      order: 3,
+    },
+    create: {
+      id: "a07d5f93-a4e2-41c7-a488-92cf43a5b004",
+      questionId: questionNineId,
+      text: "Convertir direcciones MAC en nombres de dominio.",
+      isCorrect: false,
+      order: 3,
+    },
+  });
+
+  const questionTenId =
+    "b18e60a4-b5f3-42d8-b599-a3d054b6c001";
+
+  await prisma.question.upsert({
+    where: {
+      id: questionTenId,
+    },
+    update: {
+      quizId,
+      type: "SINGLE_CHOICE",
+      text: "¿Qué puede provocar una manipulación maliciosa de ARP en una red local?",
+      explanation:
+        "La manipulación de ARP puede asociar una dirección IP con una dirección MAC incorrecta y desviar tráfico hacia otro dispositivo dentro de la red local.",
+      order: 10,
+    },
+    create: {
+      id: questionTenId,
+      quizId,
+      type: "SINGLE_CHOICE",
+      text: "¿Qué puede provocar una manipulación maliciosa de ARP en una red local?",
+      explanation:
+        "La manipulación de ARP puede asociar una dirección IP con una dirección MAC incorrecta y desviar tráfico hacia otro dispositivo dentro de la red local.",
+      order: 10,
+    },
+  });
+
+  await prisma.questionOption.upsert({
+    where: {
+      id: "b18e60a4-b5f3-42d8-b599-a3d054b6c002",
+    },
+    update: {
+      questionId: questionTenId,
+      text: "Desviar tráfico asociando una IP con una dirección MAC incorrecta.",
+      isCorrect: true,
+      order: 1,
+    },
+    create: {
+      id: "b18e60a4-b5f3-42d8-b599-a3d054b6c002",
+      questionId: questionTenId,
+      text: "Desviar tráfico asociando una IP con una dirección MAC incorrecta.",
+      isCorrect: true,
+      order: 1,
+    },
+  });
+
+  await prisma.questionOption.upsert({
+    where: {
+      id: "b18e60a4-b5f3-42d8-b599-a3d054b6c003",
+    },
+    update: {
+      questionId: questionTenId,
+      text: "Asignar automáticamente una nueva dirección IP pública.",
+      isCorrect: false,
+      order: 2,
+    },
+    create: {
+      id: "b18e60a4-b5f3-42d8-b599-a3d054b6c003",
+      questionId: questionTenId,
+      text: "Asignar automáticamente una nueva dirección IP pública.",
+      isCorrect: false,
+      order: 2,
+    },
+  });
+
+  await prisma.questionOption.upsert({
+    where: {
+      id: "b18e60a4-b5f3-42d8-b599-a3d054b6c004",
+    },
+    update: {
+      questionId: questionTenId,
+      text: "Traducir nombres de dominio de manera más rápida.",
+      isCorrect: false,
+      order: 3,
+    },
+    create: {
+      id: "b18e60a4-b5f3-42d8-b599-a3d054b6c004",
+      questionId: questionTenId,
+      text: "Traducir nombres de dominio de manera más rápida.",
+      isCorrect: false,
+      order: 3,
+    },
+  });
+
   console.log(
-    `Seed completado: 1 ruta, 1 curso, 1 módulo, 3 lecciones, ${lessonBlocks.length} bloques y 1 evaluación.`,
+    `Seed completado: 1 ruta, 1 curso, 1 módulo, 3 lecciones, ${lessonBlocks.length} bloques, 1 evaluación y 10 preguntas.`,
   );
 };
 
 main()
   .catch((error) => {
-    console.error(
-      "Error ejecutando el seed:",
-      error,
-    );
+    console.error("Error ejecutando el seed:", error);
 
     process.exitCode = 1;
   })
